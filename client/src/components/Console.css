@@ -293,6 +293,50 @@
   transform: translateY(-1px);
 }
 
+.user-info {
+  margin-left: 1rem;
+}
+
+.user-badge {
+  padding: 0.25rem 0.75rem;
+  background-color: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid #28a745;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.logout-button {
+  padding: 0.5rem 1rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.25s;
+}
+
+.logout-button:hover {
+  background-color: #c82333;
+}
+
+.login-nav-button {
+  padding: 0.5rem 1rem;
+  background-color: #646cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.25s;
+}
+
+.login-nav-button:hover {
+  background-color: #535bf2;
+}
+
 @media (max-width: 768px) {
   .console-content {
     grid-template-columns: 1fr;
@@ -357,5 +401,11 @@
   
   .input-hint small {
     color: rgba(0, 0, 0, 0.6);
+  }
+  
+  .user-badge {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #155724;
+    border: 1px solid #28a745;
   }
 }

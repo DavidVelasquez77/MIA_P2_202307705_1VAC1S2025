@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import ApiService from '../services/api'
 import './Console.css'
 
@@ -12,6 +13,7 @@ function Console() {
   const [userInput, setUserInput] = useState('')
   const [showInputDialog, setShowInputDialog] = useState(false)
   
+  const { isAuthenticated, user, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -162,6 +164,15 @@ function Console() {
     navigate('/login')
   }
 
+  const handleLogout = async () => {
+    try {
+      await logout()
+      setOutput(prev => prev + '👋 Sesión cerrada exitosamente\n')
+    } catch (error) {
+      setOutput(prev => prev + `❌ Error al cerrar sesión: ${error.message}\n`)
+    }
+  }
+
   const getServerStatusDisplay = () => {
     switch (serverStatus) {
       case 'connected':
@@ -181,14 +192,27 @@ function Console() {
           <span className={`server-status ${serverStatus}`}>
             {getServerStatusDisplay()}
           </span>
+          {isAuthenticated && user && (
+            <div className="user-info">
+              <span className="user-badge">
+                👤 {user.usuario} @ {user.idParticion}
+              </span>
+            </div>
+          )}
         </div>
         <div className="header-right">
           <button className="refresh-button" onClick={checkServerStatus}>
             🔄 Reconectar
           </button>
-          <button className="login-nav-button" onClick={handleGoToLogin}>
-            Ir a Login
-          </button>
+          {isAuthenticated ? (
+            <button className="logout-button" onClick={handleLogout}>
+              🚪 Cerrar Sesión
+            </button>
+          ) : (
+            <button className="login-nav-button" onClick={handleGoToLogin}>
+              🔐 Iniciar Sesión
+            </button>
+          )}
         </div>
       </div>
       

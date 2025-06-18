@@ -73,6 +73,72 @@ class ApiService {
       throw error
     }
   }
+
+  async login(idParticion, usuario, contraseña) {
+    try {
+      const loginCommand = `login -user=${usuario} -pass=${contraseña} -id=${idParticion}`
+      
+      const response = await fetch(`${API_BASE_URL}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command: loginCommand }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Login exitoso
+        return {
+          success: true,
+          message: result.data,
+          userData: {
+            idParticion,
+            usuario,
+            isLoggedIn: true
+          }
+        }
+      } else {
+        // Login fallido
+        return {
+          success: false,
+          error: result.error
+        }
+      }
+    } catch (error) {
+      console.error('Error en login:', error)
+      return {
+        success: false,
+        error: 'Error de conexión con el servidor'
+      }
+    }
+  }
+
+  async logout() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command: 'logout' }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error en logout:', error)
+      throw error
+    }
+  }
 }
 
 export default new ApiService()

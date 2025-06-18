@@ -1,4 +1,3 @@
-rmdisk -driveletter=A
 mkdisk -size=3000 -unit=K
 mkdisk -size=3000 -unit=K
 mkdisk -size=3000 -unit=K
