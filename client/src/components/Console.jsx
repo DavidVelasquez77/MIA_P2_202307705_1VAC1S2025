@@ -8,6 +8,9 @@ function Console() {
   const [output, setOutput] = useState('')
   const [isExecuting, setIsExecuting] = useState(false)
   const [serverStatus, setServerStatus] = useState('checking')
+  const [pendingCommand, setPendingCommand] = useState(null)
+  const [userInput, setUserInput] = useState('')
+  const [showInputDialog, setShowInputDialog] = useState(false)
   
   const navigate = useNavigate()
 
@@ -38,8 +41,7 @@ function Console() {
       
       if (commandList.length === 1) {
         // Ejecutar comando individual
-        const response = await ApiService.executeCommand(commandList[0])
-        handleSingleResponse(response, commandList[0])
+        await executeCommand(commandList[0])
       } else {
         // Ejecutar comandos en lote
         const response = await ApiService.executeBatchCommands(commandList)
@@ -53,8 +55,65 @@ function Console() {
     }
   }
 
-  const handleSingleResponse = (response, command) => {
-    let result = `\n📝 Comando: ${command}\n`
+  const executeCommand = async (command) => {
+    const response = await ApiService.executeCommand(command)
+    
+    if (response.requiresInput) {
+      setPendingCommand(response)
+      setShowInputDialog(true)
+      
+      // Mostrar el comando y el mensaje de estado en la consola
+      let result = `\n📝 Comando: ${command}\n`
+      if (response.message) {
+        result += `ℹ️ ${response.message}\n`
+      }
+      result += `❓ ${response.inputPrompt}\n`
+      
+      setOutput(prev => prev + result)
+    } else {
+      handleSingleResponse(response, command)
+    }
+  }
+
+  const handleUserInputSubmit = async (inputValue) => {
+    if (!pendingCommand) return
+    
+    setShowInputDialog(false)
+    
+    // Mostrar la respuesta del usuario en la consola
+    const displayInput = pendingCommand.inputType === 'enter' ? '[ENTER]' : inputValue
+    setOutput(prev => prev + `💬 Usuario respondió: ${displayInput}\n`)
+    
+    setUserInput('')
+    
+    try {
+      const response = await ApiService.executeCommandWithInput(
+        pendingCommand.pendingCommand, 
+        inputValue
+      )
+      
+      handleSingleResponse(response, pendingCommand.pendingCommand, false)
+      
+    } catch (error) {
+      setOutput(prev => prev + `❌ Error: ${error.message}\n`)
+    }
+    
+    setPendingCommand(null)
+  }
+
+  const handleInputDialogCancel = () => {
+    setShowInputDialog(false)
+    setUserInput('')
+    setPendingCommand(null)
+    setOutput(prev => prev + `❌ Comando cancelado por el usuario\n`)
+  }
+
+  const handleSingleResponse = (response, command, showCommand = true) => {
+    let result = ''
+    
+    if (showCommand) {
+      result += `\n📝 Comando: ${command}\n`
+    }
     
     if (response.success) {
       result += `✅ Éxito: ${response.message}\n`
@@ -172,6 +231,89 @@ function Console() {
             placeholder="La salida de los comandos aparecerá aquí..."
             rows={15}
           />
+        </div>
+      </div>
+      
+      {showInputDialog && (
+        <InputDialog
+          prompt={pendingCommand?.inputPrompt}
+          inputType={pendingCommand?.inputType}
+          value={userInput}
+          onChange={setUserInput}
+          onSubmit={handleUserInputSubmit}
+          onCancel={handleInputDialogCancel}
+        />
+      )}
+    </div>
+  )
+}
+
+function InputDialog({ prompt, inputType, value, onChange, onSubmit, onCancel }) {
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (inputType === 'yesno' && value.toLowerCase() !== 'y' && value.toLowerCase() !== 'n') {
+      alert('Por favor ingresa "y" para sí o "n" para no')
+      return
+    }
+    onSubmit(value)
+  }
+
+  const handleKeyPress = (e) => {
+    if (inputType === 'enter' && e.key === 'Enter') {
+      e.preventDefault()
+      onSubmit('')
+    }
+  }
+
+  return (
+    <div className="input-dialog-overlay">
+      <div className="input-dialog">
+        <div className="input-dialog-header">
+          <h3>🔍 Entrada requerida</h3>
+        </div>
+        
+        <div className="input-dialog-body">
+          <p><strong>{prompt}</strong></p>
+          
+          <form onSubmit={handleSubmit}>
+            {inputType === 'enter' ? (
+              <div className="enter-prompt">
+                <span>⏸️ Presiona ENTER para continuar...</span>
+                <input
+                  type="text"
+                  placeholder="Presiona Enter"
+                  onKeyPress={handleKeyPress}
+                  autoFocus
+                  style={{ opacity: 0, position: 'absolute' }}
+                />
+              </div>
+            ) : (
+              <div className="text-input">
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  placeholder={inputType === 'yesno' ? 'Escribe "y" o "n"' : 'Ingresa tu respuesta'}
+                  autoFocus
+                  maxLength={inputType === 'yesno' ? 1 : undefined}
+                />
+                {inputType === 'yesno' && (
+                  <div className="input-hint">
+                    <small>💡 Escribe "y" para confirmar o "n" para cancelar</small>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="input-dialog-buttons">
+              <button type="submit" className="submit-button">
+                {inputType === 'enter' ? '▶️ Continuar' : '📤 Enviar'}
+              </button>
+              <button type="button" onClick={onCancel} className="cancel-button">
+                ❌ Cancelar
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

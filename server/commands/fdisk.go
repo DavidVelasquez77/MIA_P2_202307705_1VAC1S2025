@@ -74,7 +74,7 @@ func ParseFdisk(tokens []string) (string, error) {
 			cmd.typ = value
 		case "-name":
 			if value == "" {
-				return "", errors.New("el nombre no puede estar vacío")
+				return  "", errors.New("el nombre no puede estar vacío")
 			}
 			cmd.name = value
 		case "-delete":
@@ -425,4 +425,196 @@ func getLowest(array []int) int {
 		}
 	}
 	return min
+}
+
+func ParseFdiskWithInput(tokens []string, userInput string) (string, error) {
+	cmd := &FDISK{}
+
+	args := strings.Join(tokens, " ")
+	re := regexp.MustCompile(`-size=\d+|-unit=[kKmMbB]|-fit=[bBfF]{2}|-driveletter=[A-Za-z]|-type=[pPeElL]|-name="[^"]+"|-name=[^\s]+|-delete=[fFuUlL]+|-add=-?\d+`)
+	matches := re.FindAllString(args, -1)
+
+	for _, match := range matches {
+		kv := strings.SplitN(match, "=", 2)
+		if len(kv) != 2 {
+			return "", fmt.Errorf("formato de parametro invalid: %s", match)
+		}
+		key, value := strings.ToLower(kv[0]), kv[1]
+		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
+			value = strings.Trim(value, "\"")
+		}
+
+		switch key {
+		case "-size":
+			size, err := strconv.Atoi(value)
+			if err != nil || size <= 0 {
+				return "", err
+			}
+			cmd.size = size
+		case "-unit":
+			value = strings.ToUpper(value)
+			if value != "K" && value != "M" && value != "B" {
+				return "", errors.New("la unidad debe ser K o M o B")
+			}
+			cmd.unit = strings.ToUpper(value)
+		case "-fit":
+			value = strings.ToUpper(value)
+			if value != "BF" && value != "FF" && value != "WF" {
+				return "", errors.New("el ajuste debe ser BF, FF o WF")
+			}
+			cmd.fit = value
+		case "-driveletter":
+			if value == "" {
+				return "", errors.New("el driveletter no puede estar vacío")
+			}
+			cmd.path = value
+		case "-type":
+			value = strings.ToUpper(value)
+			if value != "P" && value != "E" {
+				return "", errors.New("el tipo debe ser P o E")
+			}
+			cmd.typ = value
+		case "-name":
+			if value == "" {
+				return "", errors.New("el nombre no puede estar vacío")
+			}
+			cmd.name = value
+		case "-delete":
+			value = strings.ToLower(value)
+			if value != "fast" && value != "full" {
+				return "", errors.New("para -delete se debe de indicar si sera fast o full")
+			}
+			cmd.delete = value
+		case "-add":
+			size, err := strconv.Atoi(value)
+			if err != nil {
+				return "", err
+			}
+			cmd.add = size
+		default:
+			return "", fmt.Errorf("parámetro desconocido: %s", key)
+		}
+	}
+
+	if cmd.delete == "" && cmd.add == 0 {
+		if cmd.size == 0 {
+			return "", errors.New("faltan parámetros requeridos: -size")
+		}
+	}
+	if cmd.path == "" {
+		return "", errors.New("faltan parámetros requeridos: -driveletter")
+	}
+	cmd.path = stores.GetPathDisk(cmd.path)
+	if cmd.name == "" {
+		return "", errors.New("faltan parámetros requeridos: -name")
+	}
+
+	if cmd.unit == "" {
+		cmd.unit = "K"
+	}
+
+	if cmd.fit == "" {
+		cmd.fit = "WF"
+	}
+
+	if cmd.typ == "" {
+		cmd.typ = "P"
+	}
+	if cmd.delete != "" && cmd.add != 0 {
+		return "", errors.New("no se puede tener add y delete en el mismo comando")
+	}
+
+	if cmd.delete != "" {
+		// Usar el input del usuario en lugar de preguntar
+		if userInput == "y" {
+			err := deletePartition(cmd)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("FDISK: %s eliminado exitosamente", cmd.name), nil
+		} else {
+			return fmt.Sprintf("FDISK: eliminación de %s cancelada", cmd.name), nil
+		}
+	} else if cmd.add != 0 {
+		err := addPartition(cmd)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("FDISK: %s add exitosamente", cmd.name), nil
+	} else {
+		err := commandFdisk(cmd)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("FDISK: %s creado exitosamente", cmd.name), nil
+	}
+
+}
+
+// Función auxiliar para no duplicar código
+func parseCommonFdiskParams(cmd *FDISK, tokens []string) error {
+	args := strings.Join(tokens, " ")
+	re := regexp.MustCompile(`-size=\d+|-unit=[kKmMbB]|-fit=[bBfF]{2}|-driveletter=[A-Za-z]|-type=[pPeElL]|-name="[^"]+"|-name=[^\s]+|-delete=[fFuUlL]+|-add=-?\d+`)
+	matches := re.FindAllString(args, -1)
+
+	for _, match := range matches {
+		kv := strings.SplitN(match, "=", 2)
+		if len(kv) != 2 {
+			return fmt.Errorf("formato de parametro invalid: %s", match)
+		}
+		key, value := strings.ToLower(kv[0]), kv[1]
+		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
+			value = strings.Trim(value, "\"")
+		}
+
+		switch key {
+		case "-size":
+			size, err := strconv.Atoi(value)
+			if err != nil || size <= 0 {
+				return err
+			}
+			cmd.size = size
+		case "-unit":
+			value = strings.ToUpper(value)
+			if value != "K" && value != "M" && value != "B" {
+				return errors.New("la unidad debe ser K o M o B")
+			}
+			cmd.unit = strings.ToUpper(value)
+		case "-fit":
+			value = strings.ToUpper(value)
+			if value != "BF" && value != "FF" && value != "WF" {
+				return errors.New("el ajuste debe ser BF, FF o WF")
+			}
+			cmd.fit = value
+		case "-driveletter":
+			if value == "" {
+				return errors.New("el driveletter no puede estar vacío")
+			}
+			cmd.path = value
+		case "-type":
+			value = strings.ToUpper(value)
+			if value != "P" && value != "E" {
+				return  errors.New("el tipo debe ser P o E")
+			}
+			cmd.typ = value
+		case "-name":
+			if value == "" {
+				return errors.New("el nombre no puede estar vacío")
+			}
+			cmd.name = value
+		case "-delete":
+			value = strings.ToLower(value)
+			if value != "fast" && value != "full" {
+				return errors.New("para -delete se debe de indicar si sera fast o full")
+			}
+			cmd.delete = value
+		case "-add":
+			size, err := strconv.Atoi(value)
+			if err != nil {
+				return err
+			}
+			cmd.add = size
+		}
+	}
+	return nil
 }

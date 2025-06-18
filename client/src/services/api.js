@@ -22,6 +22,27 @@ class ApiService {
     }
   }
 
+  async executeCommandWithInput(command, input) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command, input }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error ejecutando comando con input:', error)
+      throw error
+    }
+  }
+
   async executeBatchCommands(commands) {
     try {
       const response = await fetch(`${API_BASE_URL}/batch`, {

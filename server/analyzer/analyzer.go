@@ -115,3 +115,22 @@ func Analyzer(input string) (interface{}, error) {
 		return nil, fmt.Errorf("comando desconocido: %v", tokens[0])
 	}
 }
+
+func AnalyzerWithInput(input string, userInput string) (interface{}, error) {
+	tokens := strings.Fields(input)
+
+	if len(tokens) == 0 {
+		return "", nil
+	}
+
+	switch strings.ToLower(tokens[0]) {
+	case "pause":
+		return "PAUSE: Continuando ejecución...", nil
+	case "fdisk":
+		// Para fdisk con delete, usar el input del usuario
+		return commands.ParseFdiskWithInput(tokens[1:], userInput)
+	default:
+		// Para otros comandos, usar el analizador normal
+		return Analyzer(input)
+	}
+}

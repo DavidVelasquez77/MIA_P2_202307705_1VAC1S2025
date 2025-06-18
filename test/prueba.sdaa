@@ -8,7 +8,7 @@ fdisk -type=E -driveletter=A -unit=K -name=velaPartition -size=300
 fdisk -type=P -driveletter=A -unit=K -name=par1 -size=300
 fdisk -type=p -driveletter=A -unit=K -name=par2 -size=300
 fdisk -type=P -driveletter=A -unit=K -name=par3 -size=300
-fdisk -driveletter=A -name=par2 -size=300 -delete=full -unit=M
+fdisk -driveletter=A -name=par2 -size=300 -add=300
 fdisk -driveletter=A -name=par1 -size=300 -add=200
 mount -driveletter=a -name=par1 
 mount -driveletter=a -name=par3 
@@ -23,7 +23,7 @@ mkfs -type=full -id=A105 -fs=3fs
 login -user=root -pass=123 -id=A105
 #ERROR SESION INICIADA
 login -user=root -pass=123 -id=A105
-pause
+
 
 mkgrp -name=usuarios
 mkgrp -name=adm

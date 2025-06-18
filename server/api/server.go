@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,13 +13,18 @@ import (
 
 type CommandRequest struct {
 	Command string `json:"command"`
+	Input   string `json:"input,omitempty"` // Para respuestas de usuario
 }
 
 type CommandResponse struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Success        bool        `json:"success"`
+	Message        string      `json:"message"`
+	Data           interface{} `json:"data,omitempty"`
+	Error          string      `json:"error,omitempty"`
+	RequiresInput  bool        `json:"requiresInput,omitempty"`
+	InputPrompt    string      `json:"inputPrompt,omitempty"`
+	InputType      string      `json:"inputType,omitempty"` // "enter", "yesno"
+	PendingCommand string      `json:"pendingCommand,omitempty"`
 }
 
 type BatchCommandRequest struct {
@@ -86,8 +92,16 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Procesar el comando
-	result, err := analyzer.Analyzer(req.Command)
+	// Verificar si es un comando que requiere confirmación
+	if requiresConfirmation(req.Command) && req.Input == "" {
+		response := handleInteractiveCommand(req.Command)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Procesar comando con input si es necesario
+	result, err := processCommandWithInput(req.Command, req.Input)
 
 	var response CommandResponse
 	if err != nil {
@@ -107,6 +121,62 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func requiresConfirmation(command string) bool {
+	lowerCmd := strings.ToLower(strings.TrimSpace(command))
+	return strings.HasPrefix(lowerCmd, "pause") ||
+		(strings.Contains(lowerCmd, "fdisk") && strings.Contains(lowerCmd, "-delete"))
+}
+
+func handleInteractiveCommand(command string) CommandResponse {
+	lowerCmd := strings.ToLower(strings.TrimSpace(command))
+
+	if strings.HasPrefix(lowerCmd, "pause") {
+		return CommandResponse{
+			RequiresInput:  true,
+			InputPrompt:    "Presiona ENTER para continuar...",
+			InputType:      "enter",
+			PendingCommand: command,
+			Message:        "⏸️ PAUSE: Esperando confirmación del usuario",
+		}
+	}
+
+	if strings.Contains(lowerCmd, "fdisk") && strings.Contains(lowerCmd, "-delete") {
+		return CommandResponse{
+			RequiresInput:  true,
+			InputPrompt:    "Desea confirmar la ejecucion del delete? [y/n]:",
+			InputType:      "yesno",
+			PendingCommand: command,
+			Message:        "⚠️ FDISK DELETE: Esperando confirmación del usuario",
+		}
+	}
+
+	return CommandResponse{
+		Success: false,
+		Error:   "Comando no reconocido como interactivo",
+	}
+}
+
+func processCommandWithInput(command, input string) (interface{}, error) {
+	lowerCmd := strings.ToLower(strings.TrimSpace(command))
+
+	if strings.HasPrefix(lowerCmd, "pause") {
+		// Para pause, cualquier input es válido (incluso vacío)
+		return analyzer.AnalyzerWithInput(command, "")
+	}
+
+	if strings.Contains(lowerCmd, "fdisk") && strings.Contains(lowerCmd, "-delete") {
+		// Para fdisk delete, necesitamos y/n
+		lowerInput := strings.ToLower(strings.TrimSpace(input))
+		if lowerInput != "y" && lowerInput != "n" {
+			return nil, errors.New("respuesta inválida. Use 'y' para sí o 'n' para no")
+		}
+		return analyzer.AnalyzerWithInput(command, lowerInput)
+	}
+
+	// Para comandos normales
+	return analyzer.Analyzer(command)
 }
 
 func handleBatchCommands(w http.ResponseWriter, r *http.Request) {

@@ -161,6 +161,138 @@
   cursor: not-allowed;
 }
 
+.input-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.input-dialog {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.input-dialog-header h3 {
+  margin: 0 0 1rem 0;
+  color: #ffffff;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.input-dialog-body p {
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.input-dialog-body p strong {
+  color: #ffc107;
+}
+
+.enter-prompt {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.enter-prompt span {
+  color: #ffc107;
+  font-weight: 500;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.input-hint {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.input-hint small {
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.text-input input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.text-input input:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+.input-dialog-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.submit-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.25s;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.submit-button:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+}
+
+.cancel-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.25s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancel-button:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
   .console-content {
     grid-template-columns: 1fr;
@@ -203,5 +335,27 @@
   .input-section textarea::placeholder,
   .output-section textarea::placeholder {
     color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .input-dialog {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+  
+  .input-dialog-header h3,
+  .input-dialog-body p {
+    color: #213547;
+  }
+  
+  .input-dialog-body p strong {
+    color: #856404;
+  }
+  
+  .enter-prompt span {
+    color: #856404;
+  }
+  
+  .input-hint small {
+    color: rgba(0, 0, 0, 0.6);
   }
 }

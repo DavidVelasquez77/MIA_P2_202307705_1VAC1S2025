@@ -4,8 +4,8 @@ digraph G {
             <table border="0" cellborder="1" cellspacing="0">
                 <tr><td colspan="2" BGCOLOR="#aabbcc"> REPORTE MBR </td></tr>
                 <tr><td BGCOLOR="#aabbcc">mbr_tamano</td><td>3072000</td></tr>
-                <tr><td BGCOLOR="#aabbcc">mrb_fecha_creacion</td><td>2025-06-17 18:14:56 -0600 CST</td></tr>
-                <tr><td BGCOLOR="#aabbcc">mbr_disk_signature</td><td>1394725293</td></tr>
+                <tr><td BGCOLOR="#aabbcc">mrb_fecha_creacion</td><td>2025-06-17 19:18:56 -0600 CST</td></tr>
+                <tr><td BGCOLOR="#aabbcc">mbr_disk_signature</td><td>137333488</td></tr>
             
 				<tr><td colspan="2" BGCOLOR="#ccbbaa"> PARTICIÓN 1 </td></tr>
 				<tr><td BGCOLOR="#ccbbaa">part_status</td><td>0</td></tr>
@@ -22,6 +22,14 @@ digraph G {
 				<tr><td BGCOLOR="#ccbbaa">part_start</td><td>307353</td></tr>
 				<tr><td BGCOLOR="#ccbbaa">part_size</td><td>512000</td></tr>
 				<tr><td BGCOLOR="#ccbbaa">part_name</td><td>par1</td></tr>
+			
+				<tr><td colspan="2" BGCOLOR="#ccbbaa"> PARTICIÓN 3 </td></tr>
+				<tr><td BGCOLOR="#ccbbaa">part_status</td><td>0</td></tr>
+				<tr><td BGCOLOR="#ccbbaa">part_type</td><td>P</td></tr>
+				<tr><td BGCOLOR="#ccbbaa">part_fit</td><td>W</td></tr>
+				<tr><td BGCOLOR="#ccbbaa">part_start</td><td>614553</td></tr>
+				<tr><td BGCOLOR="#ccbbaa">part_size</td><td>307200</td></tr>
+				<tr><td BGCOLOR="#ccbbaa">part_name</td><td>par2</td></tr>
 			
 				<tr><td colspan="2" BGCOLOR="#ccbbaa"> PARTICIÓN 4 </td></tr>
 				<tr><td BGCOLOR="#ccbbaa">part_status</td><td>0</td></tr>
