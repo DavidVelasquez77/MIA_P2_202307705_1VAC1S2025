@@ -173,6 +173,10 @@ function Console() {
     }
   }
 
+  const handleGoToFileSystem = () => {
+    navigate('/filesystem')
+  }
+
   const getServerStatusDisplay = () => {
     switch (serverStatus) {
       case 'connected':
@@ -205,9 +209,14 @@ function Console() {
             🔄 Reconectar
           </button>
           {isAuthenticated ? (
-            <button className="logout-button" onClick={handleLogout}>
-              🚪 Cerrar Sesión
-            </button>
+            <>
+              <button className="filesystem-button" onClick={handleGoToFileSystem}>
+                📁 Explorador
+              </button>
+              <button className="logout-button" onClick={handleLogout}>
+                🚪 Cerrar Sesión
+              </button>
+            </>
           ) : (
             <button className="login-nav-button" onClick={handleGoToLogin}>
               🔐 Iniciar Sesión

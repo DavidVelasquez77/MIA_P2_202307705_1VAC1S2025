@@ -337,6 +337,21 @@
   background-color: #535bf2;
 }
 
+.filesystem-button {
+  padding: 0.5rem 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.25s;
+}
+
+.filesystem-button:hover {
+  background-color: #218838;
+}
+
 @media (max-width: 768px) {
   .console-content {
     grid-template-columns: 1fr;

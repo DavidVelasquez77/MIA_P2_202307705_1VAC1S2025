@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"server/analyzer"
 	"server/console"
+	"server/stores"
+	"server/structures"
 	"strings"
 )
 
@@ -40,6 +42,9 @@ type BatchCommandResponse struct {
 func StartServer(port string) {
 	http.HandleFunc("/api/command", handleCommand)
 	http.HandleFunc("/api/batch", handleBatchCommands)
+	http.HandleFunc("/api/disks", handleGetDisks)
+	http.HandleFunc("/api/partitions", handleGetPartitions)
+	http.HandleFunc("/api/filesystem", handleGetFileSystem)
 	http.HandleFunc("/api/health", handleHealth)
 
 	// Configurar CORS
@@ -263,6 +268,174 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 		"status":  "healthy",
 		"service": "MIA File System API",
 		"version": "1.0.0",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleGetDisks(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Obtener discos reales del sistema
+	disks := []map[string]interface{}{}
+
+	for diskName, diskPath := range stores.LoadedDiskPaths {
+		// Leer información del MBR
+		mbr := &structures.MBR{}
+		err := mbr.DeserializeMBR(diskPath)
+		if err != nil {
+			continue // Saltar discos con errores
+		}
+
+		// Convertir tamaño a formato legible
+		sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
+		sizeStr := fmt.Sprintf("%.1f MB", sizeInMB)
+
+		disk := map[string]interface{}{
+			"id":     diskName,
+			"name":   diskName,
+			"size":   sizeStr,
+			"status": "Disponible",
+			"path":   diskPath,
+		}
+		disks = append(disks, disk)
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"disks":   disks,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleGetPartitions(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	diskId := r.URL.Query().Get("disk")
+	if diskId == "" {
+		http.Error(w, "Parámetro disk requerido", http.StatusBadRequest)
+		return
+	}
+
+	// Obtener particiones reales del disco
+	diskPath, exists := stores.LoadedDiskPaths[diskId]
+	if !exists {
+		http.Error(w, "Disco no encontrado", http.StatusNotFound)
+		return
+	}
+
+	mbr := &structures.MBR{}
+	err := mbr.DeserializeMBR(diskPath)
+	if err != nil {
+		http.Error(w, "Error al leer MBR", http.StatusInternalServerError)
+		return
+	}
+
+	partitions := []map[string]interface{}{}
+
+	for _, partition := range mbr.Mbr_partitions {
+		// Saltar particiones vacías
+		if partition.Part_type[0] == 'N' || partition.Part_start == -1 {
+			continue
+		}
+
+		partName := strings.TrimRight(string(partition.Part_name[:]), "\x00")
+		partId := strings.TrimRight(string(partition.Part_id[:]), "\x00")
+
+		var partType string
+		switch partition.Part_type[0] {
+		case 'P':
+			partType = "Primaria"
+		case 'E':
+			partType = "Extendida"
+		case 'L':
+			partType = "Lógica"
+		default:
+			partType = "Desconocida"
+		}
+
+		sizeInMB := float64(partition.Part_size) / (1024 * 1024)
+		sizeStr := fmt.Sprintf("%.1f MB", sizeInMB)
+
+		// Verificar si está montada
+		mounted := partition.Part_status[0] == '1'
+
+		part := map[string]interface{}{
+			"id":      partId,
+			"name":    partName,
+			"type":    partType,
+			"size":    sizeStr,
+			"mounted": mounted,
+		}
+		partitions = append(partitions, part)
+	}
+
+	response := map[string]interface{}{
+		"success":    true,
+		"partitions": partitions,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleGetFileSystem(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method != "GET" {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	partitionId := r.URL.Query().Get("partition")
+	path := r.URL.Query().Get("path")
+
+	if partitionId == "" || path == "" {
+		http.Error(w, "Parámetros partition y path requeridos", http.StatusBadRequest)
+		return
+	}
+
+	// Simular contenido del sistema de archivos
+	fileSystemContent := map[string]interface{}{
+		"folders": []map[string]interface{}{
+			{"name": "users", "permissions": "rwxr-xr-x", "owner": "root", "group": "root", "size": "4096", "date": "2024-01-15"},
+			{"name": "documents", "permissions": "rwxr-xr-x", "owner": "admin", "group": "users", "size": "4096", "date": "2024-01-10"},
+			{"name": "temp", "permissions": "rwxrwxrwx", "owner": "root", "group": "root", "size": "4096", "date": "2024-01-12"},
+		},
+		"files": []map[string]interface{}{
+			{"name": "users.txt", "permissions": "rw-r--r--", "owner": "root", "group": "root", "size": "245", "date": "2024-01-15"},
+			{"name": "config.conf", "permissions": "rw-r--r--", "owner": "admin", "group": "users", "size": "1024", "date": "2024-01-14"},
+			{"name": "readme.txt", "permissions": "rw-r--r--", "owner": "root", "group": "root", "size": "512", "date": "2024-01-13"},
+		},
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"data":    fileSystemContent,
+		"path":    path,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

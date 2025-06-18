@@ -139,6 +139,66 @@ class ApiService {
       throw error
     }
   }
+
+  async getDisks() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/disks`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error obteniendo discos:', error)
+      throw error
+    }
+  }
+
+  async getPartitions(diskId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/partitions?disk=${diskId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error obteniendo particiones:', error)
+      throw error
+    }
+  }
+
+  async getFileSystem(partitionId, path) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/filesystem?partition=${partitionId}&path=${encodeURIComponent(path)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error obteniendo sistema de archivos:', error)
+      throw error
+    }
+  }
 }
 
 export default new ApiService()

@@ -34,8 +34,8 @@ function Login() {
       const result = await login(formData.idParticion, formData.usuario, formData.contraseña)
       
       if (result.success) {
-        // Login exitoso, redirigir a la consola
-        navigate('/')
+        // Login exitoso, redirigir al visualizador del sistema de archivos
+        navigate('/filesystem')
       } else {
         // Mostrar error de login
         setError(result.error || 'Error al iniciar sesión')
