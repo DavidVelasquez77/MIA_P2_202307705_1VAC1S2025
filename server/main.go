@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"runtime"
 	"server/analyzer"
+	"server/api"
 	"server/console"
 	"strings"
 )
@@ -14,6 +15,18 @@ import (
 var outcome string
 
 func main() {
+	// Verificar si se debe ejecutar en modo servidor
+	if len(os.Args) > 1 && os.Args[1] == "server" {
+		port := "8080"
+		if len(os.Args) > 2 {
+			port = os.Args[2]
+		}
+		console.PrintWelcome()
+		api.StartServer(port)
+		return
+	}
+
+	// Modo consola tradicional
 	scanner := bufio.NewScanner(os.Stdin)
 
 	// Limpiar consola y mostrar bienvenida estética
