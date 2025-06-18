@@ -10,7 +10,10 @@ import (
 	"server/console"
 	"server/stores"
 	"server/structures"
+	"server/utils"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type CommandRequest struct {
@@ -45,6 +48,7 @@ func StartServer(port string) {
 	http.HandleFunc("/api/disks", handleGetDisks)
 	http.HandleFunc("/api/partitions", handleGetPartitions)
 	http.HandleFunc("/api/filesystem", handleGetFileSystem)
+	http.HandleFunc("/api/file-content", handleGetFileContent)
 	http.HandleFunc("/api/health", handleHealth)
 
 	// Configurar CORS
@@ -405,6 +409,11 @@ func handleGetPartitions(w http.ResponseWriter, r *http.Request) {
 func handleGetFileSystem(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if r.Method != "GET" {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
@@ -418,24 +427,650 @@ func handleGetFileSystem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Simular contenido del sistema de archivos
+	console.PrintInfo(fmt.Sprintf("📂 Solicitud filesystem - Partición: %s, Ruta: %s", partitionId, path))
+
+	// Verificar si la partición existe en particiones montadas
+	_, exists := stores.MountedPartitions[partitionId]
+	if !exists {
+		console.PrintError(fmt.Sprintf("Partición %s no está montada", partitionId))
+
+		// Retornar error pero con estructura JSON válida
+		response := map[string]interface{}{
+			"success": false,
+			"error":   "La partición no está montada. Use el comando mount para montarla.",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Obtener contenido real del sistema de archivos
+	superBlock, _, diskPath, err := stores.GetMountedPartitionSuperblock(partitionId)
+	if err != nil {
+		console.PrintError(fmt.Sprintf("Error al obtener superblock: %v", err))
+
+		response := map[string]interface{}{
+			"success": false,
+			"error":   "Error al obtener información de la partición: " + err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Verificar que la partición tenga un sistema de archivos formateado
+	if superBlock.S_magic != 0xEF53 {
+		console.PrintWarning("Partición no formateada")
+
+		response := map[string]interface{}{
+			"success": false,
+			"error":   "La partición no está formateada. Use el comando mkfs primero.",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	console.PrintInfo(fmt.Sprintf("✅ Superblock válido - Magic: 0x%X", superBlock.S_magic))
+
+	// Para la raíz, siempre usar inodo 0
+	var targetInodeIndex int32 = 0
+	if path != "/" {
+		// Navegar al directorio especificado
+		inodeIndex, err := navigateToPath(superBlock, diskPath, path)
+		if err != nil {
+			console.PrintError(fmt.Sprintf("Error al navegar: %v", err))
+
+			response := map[string]interface{}{
+				"success": false,
+				"error":   "Ruta no encontrada: " + err.Error(),
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		targetInodeIndex = inodeIndex
+	}
+
+	console.PrintInfo(fmt.Sprintf("🎯 Leyendo inodo: %d", targetInodeIndex))
+
+	// Obtener contenido del directorio usando el inodo encontrado
+	folders, files, err := getDirectoryContentFromInode(superBlock, diskPath, targetInodeIndex, partitionId)
+	if err != nil {
+		console.PrintError(fmt.Sprintf("Error al leer contenido: %v", err))
+
+		response := map[string]interface{}{
+			"success": false,
+			"error":   "Error al leer contenido del directorio: " + err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	console.PrintInfo(fmt.Sprintf("📊 Resultado: %d carpetas, %d archivos", len(folders), len(files)))
+
 	fileSystemContent := map[string]interface{}{
-		"folders": []map[string]interface{}{
-			{"name": "users", "permissions": "rwxr-xr-x", "owner": "root", "group": "root", "size": "4096", "date": "2024-01-15"},
-			{"name": "documents", "permissions": "rwxr-xr-x", "owner": "admin", "group": "users", "size": "4096", "date": "2024-01-10"},
-			{"name": "temp", "permissions": "rwxrwxrwx", "owner": "root", "group": "root", "size": "4096", "date": "2024-01-12"},
-		},
-		"files": []map[string]interface{}{
-			{"name": "users.txt", "permissions": "rw-r--r--", "owner": "root", "group": "root", "size": "245", "date": "2024-01-15"},
-			{"name": "config.conf", "permissions": "rw-r--r--", "owner": "admin", "group": "users", "size": "1024", "date": "2024-01-14"},
-			{"name": "readme.txt", "permissions": "rw-r--r--", "owner": "root", "group": "root", "size": "512", "date": "2024-01-13"},
-		},
+		"folders": folders,
+		"files":   files,
 	}
 
 	response := map[string]interface{}{
 		"success": true,
 		"data":    fileSystemContent,
 		"path":    path,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func navigateToPath(sb *structures.SuperBlock, diskPath string, path string) (int32, error) {
+	// Normalizar la ruta
+	if path == "/" {
+		return 0, nil // Inodo raíz
+	}
+
+	// Limpiar la ruta y dividir en componentes
+	path = strings.Trim(path, "/")
+	pathComponents := strings.Split(path, "/")
+
+	currentInodeIndex := int32(0) // Empezar desde la raíz
+
+	// Navegar componente por componente
+	for _, component := range pathComponents {
+		if component == "" {
+			continue
+		}
+
+		console.PrintInfo(fmt.Sprintf("Buscando componente: %s en inodo %d", component, currentInodeIndex))
+
+		nextInodeIndex, err := findInodeInDirectory(sb, diskPath, currentInodeIndex, component)
+		if err != nil {
+			return -1, fmt.Errorf("no se encontró '%s' en la ruta: %v", component, err)
+		}
+
+		// Verificar que el inodo encontrado sea un directorio
+		inode := &structures.Inode{}
+		err = inode.Deserialize(diskPath, int64(sb.S_inode_start+(nextInodeIndex*sb.S_inode_size)))
+		if err != nil {
+			return -1, err
+		}
+
+		if inode.I_type[0] != '0' {
+			return -1, fmt.Errorf("'%s' no es un directorio", component)
+		}
+
+		currentInodeIndex = nextInodeIndex
+	}
+
+	return currentInodeIndex, nil
+}
+
+func findInodeInDirectory(sb *structures.SuperBlock, diskPath string, dirInodeIndex int32, searchName string) (int32, error) {
+	inode := &structures.Inode{}
+	err := inode.Deserialize(diskPath, int64(sb.S_inode_start+(dirInodeIndex*sb.S_inode_size)))
+	if err != nil {
+		return -1, fmt.Errorf("error al deserializar inodo %d: %v", dirInodeIndex, err)
+	}
+
+	// Verificar que sea un directorio
+	if inode.I_type[0] != '0' {
+		return -1, fmt.Errorf("el inodo %d no es un directorio (tipo: %c)", dirInodeIndex, inode.I_type[0])
+	}
+
+	console.PrintInfo(fmt.Sprintf("Buscando '%s' en directorio inodo %d", searchName, dirInodeIndex))
+
+	// Buscar en todos los bloques del directorio
+	for i, blockIndex := range inode.I_block {
+		if blockIndex == -1 {
+			break
+		}
+
+		console.PrintInfo(fmt.Sprintf("Revisando bloque %d (índice %d)", i, blockIndex))
+
+		if i >= 14 {
+			// Manejar bloques indirectos
+			pointerBlock := &structures.PointerBlock{}
+			err := pointerBlock.Deserialize(diskPath, int64(sb.S_block_start+(blockIndex*sb.S_block_size)))
+			if err != nil {
+				console.PrintError(fmt.Sprintf("Error al deserializar bloque indirecto: %v", err))
+				continue
+			}
+
+			for _, ptrIndex := range pointerBlock.P_pointers {
+				if ptrIndex == -1 {
+					continue
+				}
+
+				folderBlock := &structures.FolderBlock{}
+				err := folderBlock.Deserialize(diskPath, int64(sb.S_block_start+(ptrIndex*sb.S_block_size)))
+				if err != nil {
+					continue
+				}
+
+				inodeIndex, found := searchInFolderBlock(folderBlock, searchName)
+				if found {
+					console.PrintInfo(fmt.Sprintf("Encontrado '%s' en inodo %d", searchName, inodeIndex))
+					return inodeIndex, nil
+				}
+			}
+		} else {
+			// Bloques directos
+			folderBlock := &structures.FolderBlock{}
+			err := folderBlock.Deserialize(diskPath, int64(sb.S_block_start+(blockIndex*sb.S_block_size)))
+			if err != nil {
+				console.PrintError(fmt.Sprintf("Error al deserializar bloque folder: %v", err))
+				continue
+			}
+
+			// Debug: imprimir contenido del bloque
+			console.PrintInfo(fmt.Sprintf("Contenido del bloque %d:", blockIndex))
+			for j, content := range folderBlock.B_content {
+				if content.B_inodo != -1 {
+					name := strings.TrimRight(string(content.B_name[:]), "\x00")
+					console.PrintInfo(fmt.Sprintf("  [%d] Nombre: '%s', Inodo: %d", j, name, content.B_inodo))
+				}
+			}
+
+			inodeIndex, found := searchInFolderBlock(folderBlock, searchName)
+			if found {
+				console.PrintInfo(fmt.Sprintf("Encontrado '%s' en inodo %d", searchName, inodeIndex))
+				return inodeIndex, nil
+			}
+		}
+	}
+
+	return -1, fmt.Errorf("no se encontró '%s' en el directorio inodo %d", searchName, dirInodeIndex)
+}
+
+func searchInFolderBlock(block *structures.FolderBlock, searchName string) (int32, bool) {
+	for i := 0; i < len(block.B_content); i++ {
+		content := block.B_content[i]
+		if content.B_inodo == -1 {
+			continue
+		}
+
+		contentName := strings.TrimRight(string(content.B_name[:]), "\x00")
+
+		// Saltar entradas especiales pero NO saltar entradas con guión
+		if contentName == "." || contentName == ".." || contentName == "" {
+			continue
+		}
+
+		// Importante: no saltar entradas con "-" porque pueden ser archivos válidos
+		if strings.EqualFold(contentName, searchName) {
+			return content.B_inodo, true
+		}
+	}
+	return -1, false
+}
+
+func getDirectoryContentFromInode(sb *structures.SuperBlock, diskPath string, inodeIndex int32, partitionId string) ([]map[string]interface{}, []map[string]interface{}, error) {
+	console.PrintInfo(fmt.Sprintf("🔍 Leyendo inodo %d en posición: %d", inodeIndex, sb.S_inode_start+(inodeIndex*sb.S_inode_size)))
+
+	inode := &structures.Inode{}
+	err := inode.Deserialize(diskPath, int64(sb.S_inode_start+(inodeIndex*sb.S_inode_size)))
+	if err != nil {
+		return nil, nil, fmt.Errorf("error al deserializar inodo %d: %v", inodeIndex, err)
+	}
+
+	console.PrintInfo(fmt.Sprintf("📋 Inodo %d - Tipo: %c, Bloques: %v", inodeIndex, inode.I_type[0], inode.I_block[:5]))
+
+	// Verificar que sea un directorio
+	if inode.I_type[0] != '0' {
+		return nil, nil, fmt.Errorf("el inodo %d no es un directorio (tipo: %c)", inodeIndex, inode.I_type[0])
+	}
+
+	var folders []map[string]interface{}
+	var files []map[string]interface{}
+
+	// Recorrer todos los bloques del inodo
+	for i, blockIndex := range inode.I_block {
+		if blockIndex == -1 {
+			break
+		}
+
+		console.PrintInfo(fmt.Sprintf("📦 Procesando bloque %d -> índice %d", i, blockIndex))
+
+		if i >= 14 {
+			// Manejar bloques indirectos
+			console.PrintInfo("🔗 Procesando bloque indirecto")
+			pointerBlock := &structures.PointerBlock{}
+			err := pointerBlock.Deserialize(diskPath, int64(sb.S_block_start+(blockIndex*sb.S_block_size)))
+			if err != nil {
+				console.PrintError(fmt.Sprintf("Error en bloque indirecto: %v", err))
+				continue
+			}
+
+			for j, ptrIndex := range pointerBlock.P_pointers {
+				if ptrIndex == -1 {
+					continue
+				}
+
+				console.PrintInfo(fmt.Sprintf("  📦 Sub-bloque %d -> índice %d", j, ptrIndex))
+
+				folderBlock := &structures.FolderBlock{}
+				err := folderBlock.Deserialize(diskPath, int64(sb.S_block_start+(ptrIndex*sb.S_block_size)))
+				if err != nil {
+					console.PrintError(fmt.Sprintf("Error al deserializar sub-bloque: %v", err))
+					continue
+				}
+
+				f, fl := processDirectoryBlock(folderBlock, sb, diskPath, partitionId)
+				folders = append(folders, f...)
+				files = append(files, fl...)
+			}
+		} else {
+			// Bloques directos
+			folderBlock := &structures.FolderBlock{}
+			err := folderBlock.Deserialize(diskPath, int64(sb.S_block_start+(blockIndex*sb.S_block_size)))
+			if err != nil {
+				console.PrintError(fmt.Sprintf("Error al deserializar bloque folder %d: %v", blockIndex, err))
+				continue
+			}
+
+			f, fl := processDirectoryBlock(folderBlock, sb, diskPath, partitionId)
+			folders = append(folders, f...)
+			files = append(files, fl...)
+		}
+	}
+
+	console.PrintInfo(fmt.Sprintf("✅ Contenido procesado: %d carpetas, %d archivos", len(folders), len(files)))
+
+	return folders, files, nil
+}
+
+func processDirectoryBlock(block *structures.FolderBlock, sb *structures.SuperBlock, diskPath string, partitionId string) ([]map[string]interface{}, []map[string]interface{}) {
+	var folders []map[string]interface{}
+	var files []map[string]interface{}
+
+	console.PrintInfo("🗂️ Procesando bloque de directorio...")
+
+	for i := 0; i < len(block.B_content); i++ {
+		content := block.B_content[i]
+		if content.B_inodo == -1 {
+			continue
+		}
+
+		name := strings.TrimRight(string(content.B_name[:]), "\x00")
+
+		// Saltar entradas especiales
+		if name == "" || name == "." || name == ".." {
+			continue
+		}
+
+		console.PrintInfo(fmt.Sprintf("📄 Entrada: '%s' -> inodo %d", name, content.B_inodo))
+
+		// Obtener información del inodo
+		itemInode := &structures.Inode{}
+		err := itemInode.Deserialize(diskPath, int64(sb.S_inode_start+(content.B_inodo*sb.S_inode_size)))
+		if err != nil {
+			console.PrintError(fmt.Sprintf("Error al deserializar inodo %d para '%s': %v", content.B_inodo, name, err))
+			continue
+		}
+
+		// Obtener permisos, propietario y grupo
+		permissions := getPermissionString(string(itemInode.I_perm[:]))
+		owner := getOwnerByIDSimple(itemInode.I_uid, partitionId)
+		group := getGroupByIDSimple(itemInode.I_gid, partitionId)
+		date := time.Unix(int64(itemInode.I_mtime), 0).Format("2006-01-02")
+
+		if itemInode.I_type[0] == '0' {
+			// Es una carpeta
+			console.PrintInfo(fmt.Sprintf("📁 Agregando carpeta: %s", name))
+			folders = append(folders, map[string]interface{}{
+				"name":        name,
+				"permissions": permissions,
+				"owner":       owner,
+				"group":       group,
+				"size":        "4096",
+				"date":        date,
+			})
+		} else if itemInode.I_type[0] == '1' {
+			// Es un archivo
+			console.PrintInfo(fmt.Sprintf("📄 Agregando archivo: %s (tamaño: %d)", name, itemInode.I_size))
+			files = append(files, map[string]interface{}{
+				"name":        name,
+				"permissions": permissions,
+				"owner":       owner,
+				"group":       group,
+				"size":        fmt.Sprintf("%d", itemInode.I_size),
+				"date":        date,
+			})
+		}
+	}
+
+	return folders, files
+}
+
+func getPermissionString(perms string) string {
+	if len(perms) < 3 {
+		return "rwxrwxrwx"
+	}
+
+	var result string
+	for _, perm := range perms {
+		switch perm {
+		case '0':
+			result += "---"
+		case '1':
+			result += "--x"
+		case '2':
+			result += "-w-"
+		case '3':
+			result += "-wx"
+		case '4':
+			result += "r--"
+		case '5':
+			result += "r-x"
+		case '6':
+			result += "rw-"
+		case '7':
+			result += "rwx"
+		default:
+			result += "rwx"
+		}
+	}
+	return result
+}
+
+func getOwnerByIDSimple(id int32, partitionId string) string {
+	// Intentar obtener contenido del users.txt
+	contentUsersTxt, err := getContetnUsersTxtSimple(partitionId)
+	if err != nil {
+		return "root"
+	}
+
+	strId := strconv.Itoa(int(id))
+	contentMatrix := getContentMatrixUsers(contentUsersTxt)
+
+	for _, row := range contentMatrix {
+		if len(row) < 4 {
+			continue
+		}
+		if row[0] == strId && row[1] == "U" {
+			return row[3]
+		}
+	}
+	return "root"
+}
+
+func getGroupByIDSimple(id int32, partitionId string) string {
+	// Intentar obtener contenido del users.txt
+	contentUsersTxt, err := getContetnUsersTxtSimple(partitionId)
+	if err != nil {
+		return "root"
+	}
+
+	strId := strconv.Itoa(int(id))
+	contentMatrix := getContentMatrixUsers(contentUsersTxt)
+
+	for _, row := range contentMatrix {
+		if len(row) < 3 {
+			continue
+		}
+		if row[0] == strId && row[1] == "G" {
+			return row[2]
+		}
+	}
+	return "root"
+}
+
+func getContetnUsersTxtSimple(partitionId string) (string, error) {
+	partitionSuperblock, _, partitionPath, err := stores.GetMountedPartitionSuperblock(partitionId)
+	if err != nil {
+		return "", err
+	}
+
+	// Intentar obtener users.txt desde la raíz
+	content, err := partitionSuperblock.ContentFromFile(partitionPath, 0, []string{}, "users.txt")
+	if err != nil {
+		return "", err
+	}
+
+	return content, nil
+}
+
+func processFileBlock(block *structures.FolderBlock, sb *structures.SuperBlock, diskPath string, partitionId string) ([]map[string]interface{}, []map[string]interface{}, error) {
+	var folders []map[string]interface{}
+	var files []map[string]interface{}
+
+	for i := 2; i < len(block.B_content); i++ { // Saltar "." y ".."
+		content := block.B_content[i]
+		if content.B_inodo == -1 {
+			continue
+		}
+
+		name := strings.TrimRight(string(content.B_name[:]), "\x00")
+		if name == "" {
+			continue
+		}
+
+		// Obtener información del inodo
+		itemInode := &structures.Inode{}
+		err := itemInode.Deserialize(diskPath, int64(sb.S_inode_start+(content.B_inodo*sb.S_inode_size)))
+		if err != nil {
+			continue
+		}
+
+		// Obtener permisos, propietario y grupo
+		permissions := getPermissionString(string(itemInode.I_perm[:]))
+		owner, _ := getOwnerByID(itemInode.I_uid, partitionId)
+		group, _ := getGroupByID(itemInode.I_gid, partitionId)
+		date := time.Unix(int64(itemInode.I_mtime), 0).Format("2006-01-02")
+
+		if itemInode.I_type[0] == '0' {
+			// Es una carpeta
+			folders = append(folders, map[string]interface{}{
+				"name":        name,
+				"permissions": permissions,
+				"owner":       owner,
+				"group":       group,
+				"size":        "4096",
+				"date":        date,
+			})
+		} else {
+			// Es un archivo
+			files = append(files, map[string]interface{}{
+				"name":        name,
+				"permissions": permissions,
+				"owner":       owner,
+				"group":       group,
+				"size":        fmt.Sprintf("%d", itemInode.I_size),
+				"date":        date,
+			})
+		}
+	}
+
+	return folders, files, nil
+}
+
+func getOwnerByID(id int32, partitionId string) (string, error) {
+	// Obtener contenido del users.txt
+	contentUsersTxt, err := getContetnUsersTxt(partitionId)
+	if err != nil {
+		return "unknown", err
+	}
+
+	strId := fmt.Sprintf("%d", id)
+	contentMatrix := getContentMatrixUsers(contentUsersTxt)
+
+	for _, row := range contentMatrix {
+		if len(row) < 4 {
+			continue
+		}
+		if row[0] == strId && row[1] == "U" {
+			return row[3], nil
+		}
+	}
+
+	return "unknown", nil
+}
+
+func getGroupByID(id int32, partitionId string) (string, error) {
+	// Obtener contenido del users.txt
+	contentUsersTxt, err := getContetnUsersTxt(partitionId)
+	if err != nil {
+		return "unknown", err
+	}
+
+	strId := fmt.Sprintf("%d", id)
+	contentMatrix := getContentMatrixUsers(contentUsersTxt)
+
+	for _, row := range contentMatrix {
+		if len(row) < 3 {
+			continue
+		}
+		if row[0] == strId && row[1] == "G" {
+			return row[2], nil
+		}
+	}
+
+	return "unknown", nil
+}
+
+func getContetnUsersTxt(partitionId string) (string, error) {
+	partitionSuperblock, _, partitionPath, err := stores.GetMountedPartitionSuperblock(partitionId)
+	if err != nil {
+		return "", err
+	}
+
+	parentDirs, destDir := utils.GetParentDirectories("/users.txt")
+	content, err := partitionSuperblock.ContentFromFile(partitionPath, 0, parentDirs, destDir)
+	if err != nil {
+		return "", err
+	}
+
+	return content, nil
+}
+
+func getContentMatrixUsers(contentUsers string) [][]string {
+	contentSplitedByEnters := strings.Split(contentUsers, "\n")
+	if len(contentSplitedByEnters) > 0 && contentSplitedByEnters[len(contentSplitedByEnters)-1] == "" {
+		contentSplitedByEnters = contentSplitedByEnters[:len(contentSplitedByEnters)-1]
+	}
+
+	var contentMatrix [][]string
+	for _, value := range contentSplitedByEnters {
+		if value != "" {
+			contentMatrix = append(contentMatrix, strings.Split(value, ","))
+		}
+	}
+	return contentMatrix
+}
+
+func handleGetFileContent(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	partitionId := r.URL.Query().Get("partition")
+	filePath := r.URL.Query().Get("path")
+
+	if partitionId == "" || filePath == "" {
+		http.Error(w, "Parámetros partition y path requeridos", http.StatusBadRequest)
+		return
+	}
+
+	console.PrintInfo(fmt.Sprintf("Obteniendo contenido de archivo: %s en partición: %s", filePath, partitionId))
+
+	// Obtener contenido del archivo
+	superBlock, _, diskPath, err := stores.GetMountedPartitionSuperblock(partitionId)
+	if err != nil {
+		console.PrintError(fmt.Sprintf("Error al obtener partición: %v", err))
+		http.Error(w, "Error al obtener partición: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Verificar que la partición tenga un sistema de archivos formateado
+	if superBlock.S_magic != 0xEF53 {
+		console.PrintWarning("Partición no formateada")
+		http.Error(w, "La partición no está formateada", http.StatusBadRequest)
+		return
+	}
+
+	// Obtener contenido del archivo
+	parentDirs, fileName := utils.GetParentDirectories(filePath)
+	content, err := superBlock.ContentFromFile(diskPath, 0, parentDirs, fileName)
+	if err != nil {
+		console.PrintError(fmt.Sprintf("Error al leer archivo: %v", err))
+		http.Error(w, "Error al leer archivo: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"content": content,
+		"path":    filePath,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

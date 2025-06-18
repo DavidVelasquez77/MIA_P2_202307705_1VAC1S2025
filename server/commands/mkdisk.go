@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"path/filepath"
+	"server/console"
 	stores "server/stores"
 	structures "server/structures"
 	utils "server/utils"
@@ -85,62 +85,46 @@ func ParseMkdisk(tokens []string) (string, error) {
 }
 
 func commandMkdisk(mkdisk *MKDISK) error {
-	sizeBytes, err := utils.ConvertToBytes(mkdisk.size, mkdisk.unit)
-	if err != nil {
-
-		return fmt.Errorf("error creando el disco: %v", err)
-	}
-
-	err = createDisk(mkdisk, sizeBytes)
-	if err != nil {
-
-		return fmt.Errorf("error creating disk: %v", err)
-	}
-
-	err = createMBR(mkdisk, sizeBytes)
+	file, err := os.Create(mkdisk.path)
 	if err != nil {
 		return err
 	}
-	return nil
-
-}
-
-func createDisk(mkdisk *MKDISK, sizeBytes int) error {
-	err := os.MkdirAll(filepath.Dir(mkdisk.path), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("error creando los directorios: %v", err)
-	}
-	file, err := os.Create(mkdisk.path)
-	if err != nil {
-		return fmt.Errorf("error creando el archivo: %v", err)
-	}
 	defer file.Close()
 
-	buffer := make([]byte, 1024*1024)
-	for sizeBytes > 0 {
-		writeSize := len(buffer)
-		if sizeBytes < writeSize {
-			writeSize = sizeBytes
-		}
-		if _, err := file.Write(buffer[:writeSize]); err != nil {
-			return err
-		}
-		sizeBytes -= writeSize
+	sizeBytes, err := utils.ConvertToBytes(mkdisk.size, mkdisk.unit)
+	if err != nil {
+		return err
 	}
+
+	err = file.Truncate(int64(sizeBytes))
+	if err != nil {
+		return err
+	}
+
+	mbr := createMBR(sizeBytes, mkdisk.fit)
+
+	err = mbr.SerializeMBR(mkdisk.path)
+	if err != nil {
+		return err
+	}
+
+	// Agregar el disco a los discos cargados automáticamente
+	diskLetter := utils.GetLetterToDisk()
+	stores.LoadedDiskPaths[diskLetter] = mkdisk.path
+	console.PrintInfo(fmt.Sprintf("Disco agregado a la lista: %s -> %s", diskLetter, mkdisk.path))
+
 	return nil
 }
 
-func createMBR(mkdisk *MKDISK, sizeBytes int) error {
+func createMBR(sizeBytes int, fit string) *structures.MBR {
 	var fitByte byte
-	switch mkdisk.fit {
+	switch fit {
 	case "FF":
 		fitByte = 'F'
 	case "BF":
 		fitByte = 'B'
 	case "WF":
 		fitByte = 'W'
-	default:
-		return errors.New("invalido fit type")
 	}
 
 	mbr := &structures.MBR{
@@ -155,11 +139,5 @@ func createMBR(mkdisk *MKDISK, sizeBytes int) error {
 			{Part_status: [1]byte{'N'}, Part_type: [1]byte{'N'}, Part_fit: [1]byte{'N'}, Part_start: -1, Part_size: -1, Part_name: [16]byte{'N'}, Part_correlative: -1, Part_id: [4]byte{'N'}},
 		},
 	}
-
-	err := mbr.SerializeMBR(mkdisk.path)
-	if err != nil {
-		return err
-	}
-	return nil
-
+	return mbr
 }

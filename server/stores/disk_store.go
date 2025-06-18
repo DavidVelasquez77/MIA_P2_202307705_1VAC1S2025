@@ -2,6 +2,7 @@ package stores
 
 import (
 	"fmt"
+	"server/console"
 	"server/structures"
 )
 
@@ -22,4 +23,30 @@ func GetDiskInfo(diskLetter string) (*structures.MBR, string, error) {
 	}
 
 	return mbr, diskPath, nil
+}
+
+// Función para debug - imprimir discos cargados
+func PrintLoadedDisks() {
+	console.PrintInfo("📀 Discos cargados actualmente:")
+	if len(LoadedDiskPaths) == 0 {
+		console.PrintWarning("  ⚠️ No hay discos cargados")
+		return
+	}
+
+	for letter, path := range LoadedDiskPaths {
+		console.PrintInfo(fmt.Sprintf("  %s -> %s", letter, path))
+	}
+}
+
+// Función para debug - imprimir particiones montadas
+func PrintMountedPartitions() {
+	console.PrintInfo("🗂️ Particiones montadas actualmente:")
+	if len(MountedPartitions) == 0 {
+		console.PrintWarning("  ⚠️ No hay particiones montadas")
+		return
+	}
+
+	for id, path := range MountedPartitions {
+		console.PrintInfo(fmt.Sprintf("  %s -> %s", id, path))
+	}
 }

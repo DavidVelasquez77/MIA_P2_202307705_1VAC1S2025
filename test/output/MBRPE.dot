@@ -4,8 +4,8 @@ digraph G {
             <table border="0" cellborder="1" cellspacing="0">
                 <tr><td colspan="2" BGCOLOR="#aabbcc"> REPORTE MBR </td></tr>
                 <tr><td BGCOLOR="#aabbcc">mbr_tamano</td><td>3072000</td></tr>
-                <tr><td BGCOLOR="#aabbcc">mrb_fecha_creacion</td><td>2025-06-17 20:48:32 -0600 CST</td></tr>
-                <tr><td BGCOLOR="#aabbcc">mbr_disk_signature</td><td>646388673</td></tr>
+                <tr><td BGCOLOR="#aabbcc">mrb_fecha_creacion</td><td>2025-06-17 22:58:40 -0600 CST</td></tr>
+                <tr><td BGCOLOR="#aabbcc">mbr_disk_signature</td><td>712655063</td></tr>
             
 				<tr><td colspan="2" BGCOLOR="#ccbbaa"> PARTICIÓN 1 </td></tr>
 				<tr><td BGCOLOR="#ccbbaa">part_status</td><td>0</td></tr>

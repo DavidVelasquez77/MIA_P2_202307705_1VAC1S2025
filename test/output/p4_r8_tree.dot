@@ -7,9 +7,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>777</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -25,9 +25,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>123</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>1</td></tr>
 		<tr><td >i_perm</td><td>777</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -55,9 +55,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -76,9 +76,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -95,9 +95,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -114,9 +114,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -133,9 +133,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -152,9 +152,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -171,9 +171,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -190,9 +190,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -209,9 +209,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -228,9 +228,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>1</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -245,9 +245,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>75</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>1</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -268,9 +268,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>1200</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>1</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -328,9 +328,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>28</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>1</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -347,9 +347,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -366,9 +366,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -385,9 +385,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -404,9 +404,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>
@@ -423,9 +423,9 @@ digraph G {
 		<tr><td >i_uid</td><td>1</td></tr>
 		<tr><td >i_gid</td><td>1</td></tr>
 		<tr><td >i_size</td><td>0</td></tr>
-		<tr><td >i_atime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_ctime</td><td>2025-06-17T20:48:32-06:00</td></tr>
-		<tr><td >i_mtime</td><td>2025-06-17T20:48:32-06:00</td></tr>
+		<tr><td >i_atime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_ctime</td><td>2025-06-17T22:58:40-06:00</td></tr>
+		<tr><td >i_mtime</td><td>2025-06-17T22:58:40-06:00</td></tr>
 		<tr><td >i_type</td><td>0</td></tr>
 		<tr><td >i_perm</td><td>664</td></tr>
 		<tr><td  colspan="2">BLOQUES DIRECTOS</td></tr>

@@ -13,7 +13,10 @@ function FileSystemViewer() {
   const [fileSystemData, setFileSystemData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  
+  const [showFileContent, setShowFileContent] = useState(false)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [fileContent, setFileContent] = useState('')
+
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -93,20 +96,98 @@ function FileSystemViewer() {
     }
   }
 
+  const handleNavigateFolder = async (folderName) => {
+    try {
+      setLoading(true)
+      setError('')
+      
+      const newPath = currentPath === '/' ? `/${folderName}` : `${currentPath}/${folderName}`
+      console.log(`Navegando a: ${newPath}`)
+      
+      await loadFileSystemContent(selectedPartition.id, newPath)
+    } catch (error) {
+      setError('Error al navegar a la carpeta: ' + error.message)
+      console.error('Error navigating to folder:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleNavigateBack = async () => {
+    if (currentPath === '/') return
+    
+    try {
+      setLoading(true)
+      setError('')
+      
+      const pathParts = currentPath.split('/').filter(part => part !== '')
+      pathParts.pop()
+      const newPath = pathParts.length === 0 ? '/' : '/' + pathParts.join('/')
+      
+      console.log(`Navegando hacia atrás a: ${newPath}`)
+      
+      await loadFileSystemContent(selectedPartition.id, newPath)
+    } catch (error) {
+      setError('Error al navegar hacia atrás: ' + error.message)
+      console.error('Error navigating back:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const loadFileSystemContent = async (partitionId, path) => {
     try {
+      setError('')
+      console.log(`🔄 Cargando contenido - Partición: ${partitionId}, Ruta: ${path}`)
+      
+      // Verificar que tenemos los parámetros necesarios
+      if (!partitionId || !path) {
+        throw new Error('Parámetros de partición o ruta faltantes')
+      }
+      
       // Usar el endpoint específico para obtener contenido del sistema de archivos
       const response = await ApiService.getFileSystem(partitionId, path)
       
-      if (response.success && response.data) {
+      console.log('📦 Respuesta completa:', response)
+      
+      if (response && response.success && response.data) {
+        console.log('✅ Datos válidos recibidos:', response.data)
         setFileSystemData(response.data)
         setCurrentPath(path)
+        
+        // Debug: Mostrar información en consola
+        const totalFiles = (response.data.files?.length || 0)
+        const totalFolders = (response.data.folders?.length || 0)
+        console.log(`📊 Total: ${totalFolders} carpetas, ${totalFiles} archivos`)
+        
+      } else if (response && !response.success) {
+        // Error del servidor pero respuesta válida
+        setError(response.error || 'Error desconocido del servidor')
       } else {
-        setError('Error al cargar contenido del directorio')
+        console.error('❌ Respuesta inválida del servidor:', response)
+        setError('Respuesta inválida del servidor')
       }
     } catch (error) {
-      setError('Error de conexión al cargar directorio')
-      console.error('Error loading directory:', error)
+      console.error('❌ Error loading directory:', error)
+      
+      // Manejar diferentes tipos de errores
+      let errorMessage = 'Error desconocido'
+      
+      if (error.message.includes('no se puede conectar')) {
+        errorMessage = 'No se puede conectar al servidor. Verifica que esté ejecutándose en el puerto 8080.'
+      } else if (error.message.includes('partición no está montada')) {
+        errorMessage = `La partición ${partitionId} no está montada. Usa el comando "mount" en la consola.`
+      } else if (error.message.includes('partición no está formateada')) {
+        errorMessage = `La partición ${partitionId} no está formateada. Usa el comando "mkfs -id=${partitionId}" en la consola.`
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Ruta no encontrada en el sistema de archivos.'
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Error de conexión: No se puede conectar al servidor. Verifica que esté ejecutándose.'
+      } else {
+        errorMessage = `Error: ${error.message}`
+      }
+      
+      setError(errorMessage)
     }
   }
 
@@ -119,16 +200,32 @@ function FileSystemViewer() {
     navigate('/login')
   }
 
-  const handleNavigateBack = () => {
-    const pathParts = currentPath.split('/').filter(part => part !== '')
-    pathParts.pop()
-    const newPath = pathParts.length > 0 ? '/' + pathParts.join('/') : '/'
-    loadFileSystemContent(selectedPartition.id, newPath)
+  const handleFileClick = async (fileName) => {
+    try {
+      setLoading(true)
+      const filePath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
+      
+      const response = await ApiService.getFileContent(selectedPartition.id, filePath)
+      
+      if (response.success) {
+        setSelectedFile(fileName)
+        setFileContent(response.content)
+        setShowFileContent(true)
+      } else {
+        setError('Error al cargar contenido del archivo')
+      }
+    } catch (error) {
+      setError('Error de conexión al cargar archivo')
+      console.error('Error loading file:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleNavigateFolder = (folderName) => {
-    const newPath = currentPath === '/' ? `/${folderName}` : `${currentPath}/${folderName}`
-    loadFileSystemContent(selectedPartition.id, newPath)
+  const handleCloseFileContent = () => {
+    setShowFileContent(false)
+    setSelectedFile(null)
+    setFileContent('')
   }
 
   if (!selectedDisk) {
@@ -294,55 +391,97 @@ function FileSystemViewer() {
           </div>
         )}
 
-        {fileSystemData && (
+        {fileSystemData && !showFileContent && (
           <div className="file-list">
-            <table className="file-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Permisos</th>
-                  <th>Propietario</th>
-                  <th>Grupo</th>
-                  <th>Tamaño</th>
-                  <th>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fileSystemData.folders.map((folder, index) => (
-                  <tr 
-                    key={`folder-${index}`} 
-                    className="folder-row"
-                    onClick={() => handleNavigateFolder(folder.name)}
-                  >
-                    <td>
-                      <span className="file-icon">📁</span>
-                      {folder.name}
-                    </td>
-                    <td>Carpeta</td>
-                    <td>{folder.permissions}</td>
-                    <td>{folder.owner}</td>
-                    <td>{folder.group}</td>
-                    <td>{folder.size}</td>
-                    <td>{folder.date}</td>
+            <div className="file-list-header">
+              <h4>📁 Contenido del directorio: {currentPath}</h4>
+              <span>
+                {(fileSystemData.folders?.length || 0) + (fileSystemData.files?.length || 0)} elementos
+              </span>
+            </div>
+            
+            {/* Mostrar mensaje si no hay contenido */}
+            {(!fileSystemData.files || fileSystemData.files.length === 0) && 
+             (!fileSystemData.folders || fileSystemData.folders.length === 0) ? (
+              <div className="empty-directory-message">
+                <h3>📭 Directorio vacío</h3>
+                <p>Este directorio no contiene archivos ni carpetas.</p>
+                <p>💡 <strong>Sugerencias:</strong></p>
+                <ul>
+                  <li>Crea carpetas con: <code>mkdir -path=/ruta/carpeta</code></li>
+                  <li>Crea archivos con: <code>mkfile -path=/ruta/archivo.txt -size=100</code></li>
+                  <li>Si acabas de formatear, el archivo users.txt debería estar aquí</li>
+                </ul>
+              </div>
+            ) : (
+              <table className="file-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Permisos</th>
+                    <th>Propietario</th>
+                    <th>Grupo</th>
+                    <th>Tamaño</th>
+                    <th>Fecha</th>
                   </tr>
-                ))}
-                {fileSystemData.files.map((file, index) => (
-                  <tr key={`file-${index}`} className="file-row">
-                    <td>
-                      <span className="file-icon">📄</span>
-                      {file.name}
-                    </td>
-                    <td>Archivo</td>
-                    <td>{file.permissions}</td>
-                    <td>{file.owner}</td>
-                    <td>{file.group}</td>
-                    <td>{file.size} bytes</td>
-                    <td>{file.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {fileSystemData.folders && fileSystemData.folders.map((folder, index) => (
+                    <tr 
+                      key={`folder-${index}`} 
+                      className="folder-row"
+                      onClick={() => handleNavigateFolder(folder.name)}
+                      title={`Doble clic para entrar a ${folder.name}`}
+                    >
+                      <td>
+                        <span className="file-icon">📁</span>
+                        {folder.name}
+                      </td>
+                      <td>Carpeta</td>
+                      <td>{folder.permissions}</td>
+                      <td>{folder.owner}</td>
+                      <td>{folder.group}</td>
+                      <td>{folder.size}</td>
+                      <td>{folder.date}</td>
+                    </tr>
+                  ))}
+                  {fileSystemData.files && fileSystemData.files.map((file, index) => (
+                    <tr 
+                      key={`file-${index}`} 
+                      className="file-row"
+                      onClick={() => handleFileClick(file.name)}
+                      title={`Clic para ver contenido de ${file.name}`}
+                    >
+                      <td>
+                        <span className="file-icon">📄</span>
+                        {file.name}
+                      </td>
+                      <td>Archivo</td>
+                      <td>{file.permissions}</td>
+                      <td>{file.owner}</td>
+                      <td>{file.group}</td>
+                      <td>{file.size} bytes</td>
+                      <td>{file.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {showFileContent && (
+          <div className="file-content-viewer">
+            <div className="file-content-header">
+              <h3>📄 Contenido de: {selectedFile}</h3>
+              <button className="close-file-button" onClick={handleCloseFileContent}>
+                ❌ Cerrar
+              </button>
+            </div>
+            <div className="file-content-body">
+              <pre className="file-content-text">{fileContent}</pre>
+            </div>
           </div>
         )}
 

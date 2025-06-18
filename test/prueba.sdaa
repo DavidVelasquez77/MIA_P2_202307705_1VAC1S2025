@@ -87,5 +87,5 @@ rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P2_202307705_1VAC1S2025/test/ou
 rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P2_202307705_1VAC1S2025/test/output/p4_r7_ls.png -ruta=/home/archivos/user/docs -name=ls
 rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P2_202307705_1VAC1S2025/test/output/p4_r8_tree.png -name=tree
 rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P2_202307705_1VAC1S2025/test/output/rep_journal.png -name=JourNALING
-find -path=/ -name=*.*
+find -path=/ -name=*
 logout 
