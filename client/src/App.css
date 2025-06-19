@@ -1,8 +1,10 @@
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0;
   text-align: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0F0F23 0%, #050014 100%);
 }
 
 .logo {
@@ -11,9 +13,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -114,15 +118,11 @@
 }
 
 @media (prefers-color-scheme: light) {
-  .login-form {
-    background: rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+  #root {
+    background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
   }
+}
   
-  .login-form h1,
-  .form-group label {
-    color: #213547;
-  }
   
   .form-group input {
     background: rgba(0, 0, 0, 0.05);
@@ -133,4 +133,4 @@
   .form-group input::placeholder {
     color: rgba(0, 0, 0, 0.5);
   }
-}
+
