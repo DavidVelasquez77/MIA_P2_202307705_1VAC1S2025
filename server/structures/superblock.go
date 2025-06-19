@@ -577,22 +577,32 @@ func (sb *SuperBlock) MoveTreePermissions(diskPath string, indexInode int32, use
 }
 
 func (sb *SuperBlock) TypeOfInode(diskPath string, indexInode int32) (int32, error) {
+	// Verificar que el índice del inodo sea válido
+	if indexInode < 0 || indexInode >= sb.S_inodes_count {
+		return -1, errors.New("índice de inodo fuera de rango")
+	}
+
 	inode := &Inode{}
 	err := inode.Deserialize(diskPath, int64(sb.S_inode_start+sb.S_inode_size*indexInode))
 	if err != nil {
 		return -1, err
 	}
-	if inode.I_type[0] == '0' {
+
+	// Verificar que el tipo del inodo sea válido
+	inodeType := inode.I_type[0]
+	if inodeType == '0' {
 		return 0, nil
-	} else if inode.I_type[0] == '1' {
+	} else if inodeType == '1' {
 		return 1, nil
 	}
-	return -1, errors.New("ha ocurrido un error inesperado al saber el tipo del inodo")
+
+	// Si llegamos aquí, el tipo no es válido
+	return -1, fmt.Errorf("tipo de inodo inválido: %c (valor: %d) en inodo %d", inodeType, int(inodeType), indexInode)
 }
 
 func (sb *SuperBlock) CopyInode0(diskPath string, indexInodeToCopy, indexInodoPadre int32) (int32, error) { // Inodo tipo folder
 	inode := &Inode{}
-	err := inode.Deserialize(diskPath, int64(sb.S_inode_start+sb.S_inode_size*indexInodeToCopy))
+	err := inode.Deserialize(diskPath, int64(sb.S_inode_size*indexInodeToCopy))
 	if err != nil {
 		return -1, err
 	}
@@ -708,7 +718,7 @@ func (sb *SuperBlock) CopyInode0(diskPath string, indexInodeToCopy, indexInodoPa
 
 func (sb *SuperBlock) CopyInode1(diskPath string, indexInodeToCopy int32) (int32, error) {
 	inode := &Inode{}
-	err := inode.Deserialize(diskPath, int64(sb.S_inode_start+sb.S_inode_size*indexInodeToCopy))
+	err := inode.Deserialize(diskPath, int64(sb.S_inode_size*indexInodeToCopy))
 	if err != nil {
 		return -1, err
 	}
@@ -951,3 +961,4 @@ func (sb *SuperBlock) HasPermissionToCommandFind(diskPath string, indexInode int
 	}
 	return outcome, nil
 }
+

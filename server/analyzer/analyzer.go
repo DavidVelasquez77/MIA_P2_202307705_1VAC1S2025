@@ -1,11 +1,9 @@
 package analyzer
 
 import (
-	"bufio"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"os"
 	commands "server/commands"
 	"server/stores"
 	"server/structures"
@@ -99,38 +97,8 @@ func Analyzer(input string) (interface{}, error) {
 	case "execute":
 		return ParseExecute(tokens[1:])
 	case "pause":
-		scanner := bufio.NewScanner(os.Stdin)
-		for {
-			fmt.Print("Apache ENTER para continuar: ")
-			if !scanner.Scan() {
-				break
-			}
-			input := scanner.Text()
-			if input == "" {
-				break
-			}
-		}
-		return "PAUSE", nil
+		return "PAUSE: Comando ejecutado", nil
 	default:
 		return nil, fmt.Errorf("comando desconocido: %v", tokens[0])
-	}
-}
-
-func AnalyzerWithInput(input string, userInput string) (interface{}, error) {
-	tokens := strings.Fields(input)
-
-	if len(tokens) == 0 {
-		return "", nil
-	}
-
-	switch strings.ToLower(tokens[0]) {
-	case "pause":
-		return "PAUSE: Continuando ejecución...", nil
-	case "fdisk":
-		// Para fdisk con delete, usar el input del usuario
-		return commands.ParseFdiskWithInput(tokens[1:], userInput)
-	default:
-		// Para otros comandos, usar el analizador normal
-		return Analyzer(input)
 	}
 }

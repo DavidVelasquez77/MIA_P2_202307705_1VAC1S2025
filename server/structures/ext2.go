@@ -4,6 +4,8 @@ import (
 	// structures "server/structures"
 
 	"errors"
+	"fmt"
+	"os"
 	utils "server/utils"
 	"strings"
 	"time"
@@ -434,7 +436,12 @@ func (sb *SuperBlock) CreateFile(diskPath string, inodeIndex int32, parentsDir [
 						contentName := strings.Trim(string(content.B_name[:]), "\x00")
 						destinationName := strings.Trim(destDir, "\x00")
 						if strings.EqualFold(contentName, destinationName) {
-							return errors.New("ya existe un file con el mismo nombre")
+							// En lugar de retornar error, sobrescribimos el archivo existente
+							err := sb.OverwriteFile(diskPath, content.B_inodo, fileContent)
+							if err != nil {
+								return err
+							}
+							return nil
 						}
 						if content.B_inodo != -1 {
 							tempContent := block.B_content[1]
@@ -460,10 +467,6 @@ func (sb *SuperBlock) CreateFile(diskPath string, inodeIndex int32, parentsDir [
 							I_perm:  [3]byte{'6', '6', '4'},
 						}
 						contentChunks := utils.SplitStringIntoChunks(fileContent)
-						// for i := range contentChunks {
-						// 	folderInode.I_block[i] = sb.S_blocks_count + int32(i)
-
-						// }
 						offsetInodo := sb.S_first_ino
 						err = folderInode.Serialize(diskPath, int64(offsetInodo))
 						if err != nil {
@@ -577,7 +580,12 @@ func (sb *SuperBlock) CreateFile(diskPath string, inodeIndex int32, parentsDir [
 				contentName := strings.Trim(string(content.B_name[:]), "\x00")
 				destinationName := strings.Trim(destDir, "\x00")
 				if strings.EqualFold(contentName, destinationName) {
-					return errors.New("ya existe un file con el mismo nombre")
+					// En lugar de retornar error, sobrescribimos el archivo existente
+					err := sb.OverwriteFile(diskPath, content.B_inodo, fileContent)
+					if err != nil {
+						return err
+					}
+					return nil
 				}
 				outcome, err := inode.HasPermissionsToWrite(utils.LogedUserID, utils.LogedUserGroupID)
 				if err != nil {
@@ -610,10 +618,6 @@ func (sb *SuperBlock) CreateFile(diskPath string, inodeIndex int32, parentsDir [
 					I_perm:  [3]byte{'6', '6', '4'},
 				}
 				contentChunks := utils.SplitStringIntoChunks(fileContent)
-				// for i := range contentChunks {
-				// 	folderInode.I_block[i] = sb.S_blocks_count + int32(i)
-
-				// }
 				offsetInodo := sb.S_first_ino
 				err = folderInode.Serialize(diskPath, int64(offsetInodo))
 				if err != nil {
@@ -1069,4 +1073,200 @@ func (sb *SuperBlock) folderFromAuntadorIndirecto13(diskPath string, inodeIndex 
 		}
 	}
 	return false, nil
+}
+
+// Función para liberar un bloque en el bitmap
+func (sb *SuperBlock) FreeBitmapBlock(diskPath string, blockIndex int32) error {
+	file, err := os.OpenFile(diskPath, os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Verificar que el índice del bloque sea válido
+	if blockIndex < 0 {
+		return errors.New("índice de bloque inválido")
+	}
+
+	// Calcular la posición en el bitmap de bloques
+	bitmapPosition := sb.S_bm_block_start + blockIndex
+
+	_, err = file.Seek(int64(bitmapPosition), 0)
+	if err != nil {
+		return err
+	}
+
+	// Escribir '0' para marcar como libre
+	_, err = file.Write([]byte{'0'})
+	if err != nil {
+		return err
+	}
+
+	// Actualizar contadores solo si es necesario
+	sb.S_free_blocks_count++
+
+	return nil
+}
+
+// Función auxiliar para limpiar los bloques de un archivo
+func (sb *SuperBlock) clearFileBlocks(diskPath string, fileInode *Inode) error {
+	for i, blockIndex := range fileInode.I_block {
+		if blockIndex == -1 {
+			continue
+		}
+
+		if i >= 14 {
+			// Manejar bloques indirectos
+			pointerBlock := &PointerBlock{}
+			err := pointerBlock.Deserialize(diskPath, int64(sb.S_block_start+(blockIndex*sb.S_block_size)))
+			if err != nil {
+				continue // Continuar en caso de error en lugar de fallar
+			}
+
+			for _, ptrIndex := range pointerBlock.P_pointers {
+				if ptrIndex == -1 {
+					continue
+				}
+				// Marcar el bloque como libre en el bitmap
+				err = sb.FreeBitmapBlock(diskPath, ptrIndex)
+				if err != nil {
+					continue // Continuar en caso de error
+				}
+			}
+
+			// Marcar el bloque pointer como libre
+			err = sb.FreeBitmapBlock(diskPath, blockIndex)
+			if err != nil {
+				continue // Continuar en caso de error
+			}
+		} else {
+			// Marcar el bloque directo como libre
+			err := sb.FreeBitmapBlock(diskPath, blockIndex)
+			if err != nil {
+				continue // Continuar en caso de error
+			}
+		}
+	}
+	return nil
+}
+
+// Nueva función para sobrescribir archivos existentes
+func (sb *SuperBlock) OverwriteFile(diskPath string, fileInodeIndex int32, newContent string) error {
+	// Verificar que el índice del inodo sea válido
+	if fileInodeIndex < 0 || fileInodeIndex >= sb.S_inodes_count {
+		return errors.New("índice de inodo inválido para sobrescribir")
+	}
+
+	fileInode := &Inode{}
+	err := fileInode.Deserialize(diskPath, int64(sb.S_inode_start+(fileInodeIndex*sb.S_inode_size)))
+	if err != nil {
+		return err
+	}
+
+	// Verificar que sea un archivo (tipo '1')
+	if fileInode.I_type[0] != '1' {
+		return errors.New("el inodo no es un archivo")
+	}
+
+	// Verificar permisos de escritura
+	outcome, err := fileInode.HasPermissionsToWrite(utils.LogedUserID, utils.LogedUserGroupID)
+	if err != nil {
+		return err
+	}
+	if !outcome {
+		return errors.New("inaccesible por falta de permisos")
+	}
+
+	// Limpiar bloques existentes del archivo
+	err = sb.clearFileBlocks(diskPath, fileInode)
+	if err != nil {
+		// No fallar por errores de limpieza, solo registrar
+		fmt.Printf("Advertencia: error al limpiar bloques del archivo: %v\n", err)
+	}
+
+	// Actualizar el inodo con el nuevo contenido
+	fileInode.I_size = int32(len(newContent))
+	fileInode.I_mtime = float32(time.Now().Unix())
+	fileInode.I_atime = float32(time.Now().Unix())
+
+	// Reinicializar los bloques
+	for i := range fileInode.I_block {
+		fileInode.I_block[i] = -1
+	}
+
+	// Escribir el nuevo contenido
+	if len(newContent) > 0 {
+		contentChunks := utils.SplitStringIntoChunks(newContent)
+
+		// Flag de repetir el llenado
+		flagToCreateNeoBlockPointer := true
+		tempCont := 14
+		// Index del bloque pointer
+		var indexBlockPointer int32
+		tempBlockPointer := &PointerBlock{}
+		for i, content := range contentChunks {
+			if i >= 14 { //Apuntadores indirectos
+				if flagToCreateNeoBlockPointer {
+					for id, value := range fileInode.I_block {
+						if value == -1 {
+							fileInode.I_block[id] = sb.S_blocks_count
+							break
+						}
+					}
+					indexBlockPointer = fileInode.I_block[tempCont]
+					pointerBlock := &PointerBlock{
+						P_pointers: [16]int32{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+					}
+					tempBlockPointer = pointerBlock
+					flagToCreateNeoBlockPointer = false
+					err = sb.UpdateBitmapBlock(diskPath)
+					if err != nil {
+						return err
+					}
+					sb.S_blocks_count++
+					sb.S_free_blocks_count--
+					sb.S_first_blo += sb.S_block_size
+				}
+				flag, err := stuffTheBlock(sb, tempBlockPointer, content, diskPath)
+				if err != nil {
+					return err
+				}
+				err = tempBlockPointer.Serialize(diskPath, int64(sb.S_block_start+(indexBlockPointer*sb.S_block_size)))
+				if err != nil {
+					return err
+				}
+				if !flag {
+					tempCont++
+					flagToCreateNeoBlockPointer = true
+					indexBlockPointer = fileInode.I_block[tempCont]
+				}
+			} else {
+				fileInode.I_block[i] = sb.S_blocks_count
+				contentBlock := &FileBlock{
+					B_content: [64]byte{},
+				}
+				copy(contentBlock.B_content[:], content)
+				err = contentBlock.Serialize(diskPath, int64(sb.S_first_blo))
+				if err != nil {
+					return err
+				}
+
+				err = sb.UpdateBitmapBlock(diskPath)
+				if err != nil {
+					return err
+				}
+				sb.S_blocks_count++
+				sb.S_free_blocks_count--
+				sb.S_first_blo += sb.S_block_size
+			}
+		}
+	}
+
+	// Guardar el inodo actualizado
+	err = fileInode.Serialize(diskPath, int64(sb.S_inode_start+(fileInodeIndex*sb.S_inode_size)))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
