@@ -10,7 +10,7 @@ export function useMusic() {
   return context
 }
 
-export function MusicProvider({ children }) {
+export function MusicProvider({ children }) { 
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(0.3)
   const [currentTime, setCurrentTime] = useState(0)
