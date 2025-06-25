@@ -67,7 +67,7 @@ func StartServer(port string) {
 	console.PrintInfo("   GET /api/health - Estado del servidor")
 	console.PrintSeparator()
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":8010", nil))
 }
 
 func enableCORS(w http.ResponseWriter) {
