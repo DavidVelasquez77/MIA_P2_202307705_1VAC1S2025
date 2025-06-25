@@ -57,17 +57,43 @@ func StartServer(port string) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+		// Responder con información básica para la raíz
+		if r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"status":  "running",
+				"service": "MIA File System API",
+				"message": "API funcionando correctamente",
+				"time":    time.Now().Format("2006-01-02 15:04:05"),
+			})
+			return
+		}
 		http.NotFound(w, r)
 	})
 
 	console.PrintInfo(fmt.Sprintf("🚀 Servidor API iniciado en puerto %s", port))
 	console.PrintInfo("📡 Endpoints disponibles:")
+	console.PrintInfo("   GET / - Información básica del servidor")
 	console.PrintInfo("   POST /api/command - Ejecutar comando individual")
 	console.PrintInfo("   POST /api/batch - Ejecutar múltiples comandos")
+	console.PrintInfo("   GET /api/disks - Obtener discos disponibles")
+	console.PrintInfo("   GET /api/partitions?disk=<id> - Obtener particiones")
+	console.PrintInfo("   GET /api/filesystem?partition=<id>&path=<path> - Obtener contenido")
+	console.PrintInfo("   GET /api/file-content?partition=<id>&path=<path> - Obtener archivo")
 	console.PrintInfo("   GET /api/health - Estado del servidor")
 	console.PrintSeparator()
 
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
+	serverAddr := "0.0.0.0:" + port
+	console.PrintInfo(fmt.Sprintf("🔗 Servidor escuchando en %s", serverAddr))
+	console.PrintInfo(fmt.Sprintf("🌍 Acceso externo: http://44.204.174.145:%s", port))
+	console.PrintInfo(fmt.Sprintf("🏠 Acceso local: http://localhost:%s", port))
+	console.PrintInfo("⚠️  Asegúrate de que el puerto esté abierto en el grupo de seguridad de AWS")
+
+	console.PrintInfo("🔥 Iniciando servidor HTTP...")
+	if err := http.ListenAndServe(serverAddr, nil); err != nil {
+		console.PrintError(fmt.Sprintf("Error al iniciar servidor: %v", err))
+		log.Fatal(err)
+	}
 }
 
 func enableCORS(w http.ResponseWriter) {

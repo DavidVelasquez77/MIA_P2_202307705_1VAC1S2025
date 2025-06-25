@@ -22,6 +22,7 @@ func main() {
 			port = os.Args[2]
 		}
 		console.PrintWelcome()
+		console.PrintInfo(fmt.Sprintf("🌐 Iniciando servidor en http://localhost:%s", port))
 		api.StartServer(port)
 		return
 	}
