@@ -256,113 +256,33 @@ func handleGetDisks(w http.ResponseWriter, r *http.Request) {
 	// Obtener discos reales del sistema
 	disks := []map[string]interface{}{}
 
-	// Verificar si hay un usuario logueado y si es root
-	if stores.LogedUser != "" {
-		if stores.IsLoggedUserRoot() {
-			console.PrintInfo("👑 Usuario ROOT detectado, mostrando todos los discos")
+	// Debug: imprimir estado actual
+	console.PrintInfo(fmt.Sprintf("🔍 Consultando discos cargados: %d discos encontrados", len(stores.LoadedDiskPaths)))
 
-			// Root puede ver todos los discos
-			for diskName, diskPath := range stores.LoadedDiskPaths {
-				console.PrintInfo(fmt.Sprintf("  📀 Procesando disco: %s -> %s", diskName, diskPath))
+	for diskName, diskPath := range stores.LoadedDiskPaths {
+		console.PrintInfo(fmt.Sprintf("  📀 Procesando disco: %s -> %s", diskName, diskPath))
 
-				// Leer información del MBR
-				mbr := &structures.MBR{}
-				err := mbr.DeserializeMBR(diskPath)
-				if err != nil {
-					console.PrintError(fmt.Sprintf("  ❌ Error al leer MBR del disco %s: %v", diskName, err))
-					continue // Saltar discos con errores
-				}
-
-				// Convertir tamaño a formato legible
-				sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
-				sizeStr := fmt.Sprintf("%.1f MB", sizeInMB)
-
-				disk := map[string]interface{}{
-					"id":     diskName,
-					"name":   diskName,
-					"size":   sizeStr,
-					"status": "Disponible",
-					"path":   diskPath,
-				}
-				disks = append(disks, disk)
-				console.PrintInfo(fmt.Sprintf("  ✅ Disco agregado a respuesta: %s", diskName))
-
-			}
-		} else if stores.LogedUserDiskPath != "" {
-			console.PrintInfo("🔒 Usuario normal detectado, filtrando solo su disco")
-
-			// Usuario normal - solo su disco
-			diskLetter, diskPath, err := stores.GetLoggedUserDisk()
-			if err != nil {
-				console.PrintError(fmt.Sprintf("Error obteniendo disco del usuario: %v", err))
-				response := map[string]interface{}{
-					"success": false,
-					"error":   "Error al obtener disco del usuario logueado",
-				}
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(response)
-				return
-			}
-
-			console.PrintInfo(fmt.Sprintf("📀 Procesando disco del usuario: %s -> %s", diskLetter, diskPath))
-
-			// Leer información del MBR del disco del usuario
-			mbr := &structures.MBR{}
-			err = mbr.DeserializeMBR(diskPath)
-			if err != nil {
-				console.PrintError(fmt.Sprintf("❌ Error al leer MBR del disco del usuario %s: %v", diskLetter, err))
-				response := map[string]interface{}{
-					"success": false,
-					"error":   "Error al leer información del disco del usuario",
-				}
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(response)
-				return
-			}
-
-			// Convertir tamaño a formato legible
-			sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
-			sizeStr := fmt.Sprintf("%.1f MB", sizeInMB)
-
-			disk := map[string]interface{}{
-				"id":     diskLetter,
-				"name":   diskLetter,
-				"size":   sizeStr,
-				"status": "Disponible",
-				"path":   diskPath,
-			}
-			disks = append(disks, disk)
-			console.PrintInfo(fmt.Sprintf("✅ Disco del usuario agregado: %s", diskLetter))
+		// Leer información del MBR
+		mbr := &structures.MBR{}
+		err := mbr.DeserializeMBR(diskPath)
+		if err != nil {
+			console.PrintError(fmt.Sprintf("  ❌ Error al leer MBR del disco %s: %v", diskName, err))
+			continue // Saltar discos con errores
 		}
-	} else {
-		// Si no hay usuario logueado, mostrar todos los discos (comportamiento anterior)
-		console.PrintInfo(fmt.Sprintf("🔍 No hay usuario logueado, mostrando todos los discos: %d discos encontrados", len(stores.LoadedDiskPaths)))
 
-		for diskName, diskPath := range stores.LoadedDiskPaths {
-			console.PrintInfo(fmt.Sprintf("  📀 Procesando disco: %s -> %s", diskName, diskPath))
+		// Convertir tamaño a formato legible
+		sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
+		sizeStr := fmt.Sprintf("%.1f MB", sizeInMB)
 
-			// Leer información del MBR
-			mbr := &structures.MBR{}
-			err := mbr.DeserializeMBR(diskPath)
-			if err != nil {
-				console.PrintError(fmt.Sprintf("  ❌ Error al leer MBR del disco %s: %v", diskName, err))
-				continue // Saltar discos con errores
-			}
-
-			// Convertir tamaño a formato legible
-			sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
-			sizeStr := fmt.Sprintf("%.1f MB", sizeInMB)
-
-			disk := map[string]interface{}{
-				"id":     diskName,
-				"name":   diskName,
-				"size":   sizeStr,
-				"status": "Disponible",
-				"path":   diskPath,
-			}
-			disks = append(disks, disk)
-			console.PrintInfo(fmt.Sprintf("  ✅ Disco agregado a respuesta: %s", diskName))
+		disk := map[string]interface{}{
+			"id":     diskName,
+			"name":   diskName,
+			"size":   sizeStr,
+			"status": "Disponible",
+			"path":   diskPath,
 		}
+		disks = append(disks, disk)
+		console.PrintInfo(fmt.Sprintf("  ✅ Disco agregado a respuesta: %s", diskName))
 	}
 
 	console.PrintInfo(fmt.Sprintf("📊 Respuesta final: %d discos en la lista", len(disks)))
@@ -370,7 +290,6 @@ func handleGetDisks(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"success": true,
 		"disks":   disks,
-		"isRoot":  stores.IsLoggedUserRoot(), // Agregar información si es root
 	}
 
 	w.Header().Set("Content-Type", "application/json")

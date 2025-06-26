@@ -27,55 +27,13 @@ Este manual técnico documenta el sistema de archivos EXT3 simulado implementado
 ## Descripción de la Arquitectura del Sistema
 
 ### Arquitectura General
+![alt text](/image/i1.png)
+```
 
+                            │
+                            ▼
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          APLICACIÓN WEB                             │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────┐                ┌──────────────────────┐    │
-│  │     FRONTEND        │                │      BACKEND         │    │
-│  │   (React + Vite)    │◄──── HTTP ────►│   (Go Web Server)    │    │
-│  │                     │                │                      │    │
-│  │ ┌─────────────────┐ │                │ ┌──────────────────┐ │    │
-│  │ │  Components     │ │                │ │   API Handlers   │ │    │
-│  │ │ - Console       │ │                │ │ - Command Parser │ │    │
-│  │ │ - Login         │ │                │ │ - File System    │ │    │
-│  │ │ - FileViewer    │ │                │ │ - Reports        │ │    │
-│  │ │ - MusicPlayer   │ │                │ └──────────────────┘ │    │
-│  │ └─────────────────┘ │                │                      │    │
-│  │                     │                │ ┌──────────────────┐ │    │
-│  │ ┌─────────────────┐ │                │ │   Structures     │ │    │
-│  │ │    Contexts     │ │                │ │ - MBR            │ │    │
-│  │ │ - AuthContext   │ │                │ │ - SuperBlock     │ │    │
-│  │ │ - MusicContext  │ │                │ │ - Inodes         │ │    │
-│  │ └─────────────────┘ │                │ │ - Blocks         │ │    │
-│  │                     │                │ └──────────────────┘ │    │
-│  │ ┌─────────────────┐ │                │                      │    │
-│  │ │    Services     │ │                │ ┌──────────────────┐ │    │
-│  │ │ - API Client    │ │                │ │   File Storage   │ │    │
-│  │ └─────────────────┘ │                │ │ - Disk Files     │ │    │
-│  └─────────────────────┘                │ │ - Binary I/O     │ │    │
-│                                         │ └──────────────────┘ │    │
-│                                         └──────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         SISTEMA DE ARCHIVOS                         │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │   DISCOS    │  │ PARTICIONES │  │   INODOS    │  │   BLOQUES   │ │
-│  │   (.dsk)    │  │   (MBR)     │  │  (Metadata) │  │  (Datos)    │ │
-│  │             │  │             │  │             │  │             │ │
-│  │ - Primarias │  │ - Primarias │  │ - Archivos  │  │ - Directorio│ │
-│  │ - Extendidas│  │ - Lógicas   │  │ - Carpetas  │  │ - Archivo   │ │
-│  │ - Lógicas   │  │ - Extendidas│  │ - Permisos  │  │ - Punteros  │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+![alt text](/image/i2.png)
 
 ### Comunicación entre Módulos
 
@@ -95,49 +53,7 @@ Este manual técnico documenta el sistema de archivos EXT3 simulado implementado
 
 ### Diagrama de Despliegue
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                              AWS CLOUD                              │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────┐         ┌──────────────────────────┐   │
-│  │       FRONTEND          │         │        BACKEND           │   │
-│  │      (AWS S3)           │         │      (AWS EC2)           │   │
-│  │                         │         │                          │   │
-│  │ ┌─────────────────────┐ │         │ ┌──────────────────────┐ │   │
-│  │ │   Static Website    │ │         │ │     Linux Instance   │ │   │
-│  │ │   Hosting           │ │         │ │   (Ubuntu 22.04)     │ │   │
-│  │ │                     │ │         │ │                      │ │   │
-│  │ │ - HTML/CSS/JS       │ │         │ │ ┌──────────────────┐ │ │   │
-│  │ │ - React Bundle      │ │         │ │ │   Go Application │ │ │   │
-│  │ │ - Assets            │ │         │ │ │   Port: 8080     │ │ │   │
-│  │ └─────────────────────┘ │         │ │ └──────────────────┘ │ │   │
-│  │                         │         │ │                      │ │   │
-│  │ Bucket Policy:          │         │ │ ┌──────────────────┐ │ │   │
-│  │ - Public Read Access    │         │ │ │ Security Group   │ │ │   │
-│  │ - Static Website        │         │ │ │ - Port 8080: Web │ │ │   │
-│  │ - Index: index.html     │         │ │ │ - Port 22: SSH   │ │ │   │
-│  └─────────────────────────┘         │ │ └──────────────────┘ │ │   │
-│             │                        │ │                      │ │   │
-│             │                        │ │ ┌──────────────────┐ │ │   │
-│             │      HTTPS/HTTP        │ │ │  File Storage    │ │ │   │
-│             └────────────────────────►│ │ │  /tmp/*.dsk      │ │ │   │
-│                                      │ │ │  /test/output/*  │ │ │   │
-│                                      │ │ └──────────────────┘ │ │   │
-│                                      │ └──────────────────────┘ │   │
-│                                      └──────────────────────────┘   │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    USUARIOS FINALES                         │   │
-│  │                                                             │   │
-│  │  Internet ──► CloudFront (Opcional) ──► S3 Bucket          │   │
-│  │                        │                                    │   │
-│  │                        └──────► EC2 Instance (API Calls)   │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
+![alt text](/image/i3.png)
 ### Componentes de Despliegue
 
 #### 1. Frontend - AWS S3 Static Website Hosting
@@ -203,30 +119,7 @@ type MBR struct {
 **Función**: Define la estructura del disco y contiene información sobre las particiones primarias y extendidas.
 
 **Organización en el archivo .dsk**:
-```
-┌─────────────────────────────────────────────┐
-│                    MBR                      │ ← Offset 0
-│  - Tamaño del disco                         │
-│  - Fecha de creación                        │
-│  - Firma del disco                          │
-│  - Algoritmo de ajuste                      │
-│  - 4 Particiones                            │
-├─────────────────────────────────────────────┤
-│              Partición 1                    │ ← Después del MBR
-│              (Primaria)                     │
-├─────────────────────────────────────────────┤
-│              Partición 2                    │
-│              (Extendida)                    │
-│  ┌─────────────────────────────────────────┐│
-│  │            EBR 1                        ││ ← Lógicas dentro
-│  │         Partición Lógica 1              ││   de la extendida
-│  ├─────────────────────────────────────────┤│
-│  │            EBR 2                        ││
-│  │         Partición Lógica 2              ││
-│  └─────────────────────────────────────────┘│
-└─────────────────────────────────────────────┘
-```
-
+![alt text](/image/i4.png)
 ### 2. Partition (Partición)
 
 ```go
@@ -267,23 +160,7 @@ type SuperBlock struct {
 ```
 
 **Organización en la partición**:
-```
-┌─────────────────────────────────────────────┐
-│              SuperBlock                     │ ← Offset 0 de la partición
-├─────────────────────────────────────────────┤
-│           Bitmap de Inodos                  │ ← S_bm_inode_start
-│  [0][1][1][0][1][0][0][1]...               │
-├─────────────────────────────────────────────┤
-│           Bitmap de Bloques                 │ ← S_bm_block_start
-│  [1][1][0][0][1][1][0][0]...               │
-├─────────────────────────────────────────────┤
-│           Tabla de Inodos                   │ ← S_inode_start
-│  Inodo 0 │ Inodo 1 │ Inodo 2 │ ...         │
-├─────────────────────────────────────────────┤
-│           Bloques de Datos                  │ ← S_block_start
-│  Bloque 0│ Bloque 1│ Bloque 2│ ...         │
-└─────────────────────────────────────────────┘
-```
+![alt text](/image/i5.png)
 
 ### 4. Inode (Inodo)
 

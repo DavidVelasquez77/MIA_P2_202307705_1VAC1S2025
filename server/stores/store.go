@@ -17,7 +17,6 @@ var (
 	MountedPartitions map[string]string = make(map[string]string) //ID:path
 	LogedIdPartition  string            = ""
 	LogedUser         string            = ""
-	LogedUserDiskPath string            = ""                      // Nueva variable para el disco del usuario logueado
 	LoadedDiskPaths   map[string]string = make(map[string]string) //Nombre:path
 )
 
@@ -136,28 +135,6 @@ func ClearAllDisks() {
 	MountedPartitions = make(map[string]string)
 	LogedIdPartition = ""
 	LogedUser = ""
-	LogedUserDiskPath = "" // Limpiar también el disco del usuario
-}
-
-// Nueva función para verificar si el usuario logueado es root
-func IsLoggedUserRoot() bool {
-	return strings.ToLower(LogedUser) == "root"
-}
-
-// Nueva función para obtener el disco del usuario logueado
-func GetLoggedUserDisk() (string, string, error) {
-	if LogedUserDiskPath == "" {
-		return "", "", errors.New("no hay usuario logueado")
-	}
-
-	// Buscar la letra del disco basado en el path
-	for diskLetter, diskPath := range LoadedDiskPaths {
-		if diskPath == LogedUserDiskPath {
-			return diskLetter, diskPath, nil
-		}
-	}
-
-	return "", "", errors.New("disco del usuario no encontrado en discos cargados")
 }
 
 // Función mejorada para debug del estado actual
