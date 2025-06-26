@@ -3,13 +3,14 @@ package stores
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"server/structures"
 	"server/utils"
 	"strings"
 )
 
-const Carnet string = "05"                                                           //2023007705
+const Carnet string = "05"                                               //2023007705
 const PathDisk string = "/home/ubuntu/MIA_P2_202307705_1VAC1S2025/test/" //FIXME cambiar el path
 
 var (
@@ -117,4 +118,31 @@ func GetMountedPartitionSuperblock(id string) (*structures.SuperBlock, *structur
 	}
 
 	return &sb, partition, path, nil
+}
+
+// CleanupInvalidDisks elimina entradas de discos que ya no existen o no son válidos
+func CleanupInvalidDisks() {
+	validDisks := make(map[string]string)
+
+	for diskName, diskPath := range LoadedDiskPaths {
+		// Verificar que el archivo existe
+		if _, err := os.Stat(diskPath); os.IsNotExist(err) {
+			fmt.Printf("⚠️ Disco %s no existe en path %s, eliminando del registro\n", diskName, diskPath)
+			continue
+		}
+
+		// Verificar que es un archivo .dsk
+		if !strings.HasSuffix(diskPath, ".dsk") {
+			fmt.Printf("⚠️ Archivo %s no es un disco válido (.dsk), eliminando del registro\n", diskPath)
+			continue
+		}
+
+		// Si llega aquí, es válido
+		validDisks[diskName] = diskPath
+	}
+
+	// Actualizar el mapa con solo los discos válidos
+	LoadedDiskPaths = validDisks
+
+	fmt.Printf("📀 Discos válidos después de limpieza: %d\n", len(LoadedDiskPaths))
 }

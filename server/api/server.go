@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"server/analyzer"
 	"server/console"
 	"server/stores"
@@ -252,16 +253,33 @@ func handleGetDisks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Obtener discos reales del sistema
+	// Obtener discos reales del sistema y limpiar entradas inválidas
 	disks := []map[string]interface{}{}
+	validDisks := make(map[string]string)
 
 	for diskName, diskPath := range stores.LoadedDiskPaths {
+		// Verificar que el archivo existe y tiene extensión .dsk
+		if !fileExistsInDisk(diskPath) {
+			console.PrintWarning(fmt.Sprintf("⚠️ Disco %s no existe en path %s, eliminando del registro", diskName, diskPath))
+			continue
+		}
+
+		// Verificar que es un archivo .dsk
+		if !strings.HasSuffix(diskPath, ".dsk") {
+			console.PrintWarning(fmt.Sprintf("⚠️ Archivo %s no es un disco válido (.dsk), ignorando", diskPath))
+			continue
+		}
+
 		// Leer información del MBR
 		mbr := &structures.MBR{}
 		err := mbr.DeserializeMBR(diskPath)
 		if err != nil {
+			console.PrintWarning(fmt.Sprintf("⚠️ Error al leer MBR del disco %s: %v", diskPath, err))
 			continue // Saltar discos con errores
 		}
+
+		// Si llegamos aquí, el disco es válido
+		validDisks[diskName] = diskPath
 
 		// Convertir tamaño a formato legible
 		sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
@@ -276,6 +294,11 @@ func handleGetDisks(w http.ResponseWriter, r *http.Request) {
 		}
 		disks = append(disks, disk)
 	}
+
+	// Actualizar el mapa con solo los discos válidos
+	stores.LoadedDiskPaths = validDisks
+
+	console.PrintInfo(fmt.Sprintf("📀 Discos válidos encontrados: %d", len(disks)))
 
 	response := map[string]interface{}{
 		"success": true,
@@ -1036,4 +1059,10 @@ func handleGetFileContent(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// fileExistsInDisk verifica si un archivo de disco existe en el sistema de archivos
+func fileExistsInDisk(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
 }

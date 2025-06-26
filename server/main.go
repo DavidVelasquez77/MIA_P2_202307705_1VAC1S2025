@@ -9,6 +9,7 @@ import (
 	"server/analyzer"
 	"server/api"
 	"server/console"
+	"server/stores"
 	"strings"
 )
 
@@ -22,6 +23,8 @@ func main() {
 			port = os.Args[2]
 		}
 		console.PrintWelcome()
+		console.PrintInfo("🧹 Limpiando registros de discos inválidos...")
+		stores.CleanupInvalidDisks()
 		console.PrintInfo(fmt.Sprintf("🌐 Iniciando servidor en http://localhost:%s", port))
 		api.StartServer(port)
 		return
