@@ -1,4 +1,4 @@
-mkdisk -size=10 -unit=M
+mkdisk -size=10 -unit=M 
 mkdisk -size=12
 mkdisk -size=10 -unit=M
 mkdisk -size=12
@@ -6,78 +6,78 @@ mkdisk -size=15
 mkdisk -size=15
 mkdisk -size=10
 mkdisk -size=12
+ 
 
-# ERROR NO EXISTE EL DISCO A ELIMINAR
+# ERROR
 rmdisk -driveletter=X
 rmdisk -driveletter=Y
-pause
+ 
 
+# ELIMINANDO DISCOS
 rmdisk -driveletter=F
 rmdisk -driveletter=G
+ 
 
-
-# ERROR NO EXISTE EL DISCO PARA PARTICIONAR
-fdisk -type=P -driveletter=X -size=500 -unit=K -name=error1
-fdisk -type=P -driveletter=Y -size=500 -unit=K -name=error2
-pause
-
-
-fdisk -type=P -driveletter=A -size=500 -unit=K -name=particion1
+fdisk -type=P -driveletter=A -size=900 -unit=K -name=particion1
 fdisk -type=P -driveletter=A -size=700 -unit=K -name=particion2
 fdisk -type=P -driveletter=A -size=900 -unit=K -name=particion3
 fdisk -type=E -driveletter=A -size=900 -unit=K -name=particion4
+ 
 
 fdisk -type=P -driveletter=B -size=100 -unit=K -name=particion1
 fdisk -type=P -driveletter=B -size=200 -unit=K -name=particion2
 fdisk -type=P -driveletter=B -size=100 -unit=K -name=particion3
 fdisk -type=E -driveletter=B -size=200 -unit=K -name=particion4
+ 
 
 fdisk -type=P -driveletter=C -size=100 -unit=K -name=particion1
 fdisk -type=P -driveletter=C -size=200 -unit=K -name=particion2
-
 fdisk -type=P -driveletter=D -size=100 -unit=K -name=particion1
 fdisk -type=E -driveletter=D -size=200 -unit=K -name=particion2
-# ERROR AL CREAR LAS PARTICIONES
+ 
+
+# ERROR 
 fdisk -type=E -driveletter=D -size=100 -unit=K -name=particion3
 fdisk -type=P -driveletter=D -size=12 -unit=M -name=particion4
-pause
+ 
 
-fdisk -add=200 -unit=K -driveletter=A -name=particion1
-fdisk -add=-200 -unit=K -driveletter=A -name=particion3
 fdisk -delete=full -driveletter=A -name=particion4
-fdisk -add=100 -unit=K -driveletter=B -name=particion1
-fdisk -add=100 -unit=K -driveletter=B -name=particion3
-fdisk -add=100 -unit=K -driveletter=C -name=particion1
+fdisk -delete=full -driveletter=B -name=particion3
+ 
 
+fdisk -add=-200 -unit=K -driveletter=A -name=particion1    
+fdisk -add=-200 -unit=K -driveletter=A -name=particion3
+fdisk -add=100 -unit=K -driveletter=C -name=particion2
+ 
 
 mount -driveletter=A -name=particion1
 mount -driveletter=A -name=particion2
 mount -driveletter=A -name=particion3
 mount -driveletter=B -name=particion1
 mount -driveletter=C -name=particion1
+ 
 
-# ERROR NO EXISTE EL ID
+# ERROR
 unmount -id=X160
 unmount -id=Y260
-pause 
+  
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 unmount -id=A205
 unmount -id=A305
+ 
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 mkfs -type=full -id=A105 -fs=3fs
 mkfs -type=full -id=B105 -fs=2fs
 mkfs -type=full -id=C105 -fs=3fs
-pause
+ 
 
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/MBRPE.png -name=mbr
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/disk.png -name=disk
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 # ERROR NO EXISTE EL USUARIO
 login -user=user -pass=123 -id=A105
-pause 
+  
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 login -user=root -pass=123 -id=A105
@@ -96,36 +96,31 @@ rmgrp -name=grupo2
 rmgrp -name=grupo4
 rmgrp -name=grupo6
 rmgrp -name=grupo8
+ 
 
 mkusr -user=user1 -pass=123 -grp=grupo1
 mkusr -user=user2 -pass=123 -grp=grupo1
 
+rmusr -user=user2
+ 
+
 # ERROR USUARIO REPETIDO
 mkusr -user=user1 -pass=123 -grp=grupo3
-pause
-
-# ERROR NO EXISTE EL GRUPO
-mkusr -user=user3 -pass=123 -grp=grupo8
-pause
-
-# ELIMINANDO USER 2 Y GRUPO9
-rmusr -user=user2
-rmgrp -name=grupo9
+ 
 
 # ERROR USUARIO ELIMINADO
 rmusr -user=user2
-pause
+ 
 
 # ERROR GRUPO ELIMINADO
 rmgrp -name=grupo9
-pause
+ 
 
 logout
 
 #ERROR NO HAY SESION INICIADA
 logout 
-pause 
-
+  
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 login -user=user1 -pass=123 -id=A105
@@ -133,8 +128,7 @@ login -user=user1 -pass=123 -id=A105
 mkusr -user=user2
 mkgrp -name=grupo9
 logout
-
-
+ 
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 login -user=root -pass=123 -id=A105
@@ -145,34 +139,20 @@ mkfile -size=15 -path=/home/user/docs/c.txt -r
 
 # ERROR DIRECTORIO NO CREADO
 mkfile -path="/home/mis documentos/archivo 1.txt"
-pause
+ 
 
 cat -file1=/home/user/docs/c.txt
 # SOBRESCRITURA DEL ARCHIVO - el usuario deberá confirmar la sobrescritura
 mkfile -size=45 -path=/home/user/docs/c.txt  
- 
 cat -file1=/home/user/docs/c.txt
-
-# ERROR NO EXISTE EL ARCHIVO
-cat -file1=/home/user/docs/b.txt
-pause
+ 
 
 mkdir -r -path=/home/user/docs/tareas
 mkdir -r -path=/home/user/docs/proyectos
 
 # ERROR NO EXISTE LA CARPETA ARCHVIOS
 mkdir -path=/home/user/archivos/proyecto1
-pause
-
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/inode_test.png -name=inode
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/block_test.png -name=block
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/tree_test.png -name=tree
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/sb_test.png -name=sb
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/bm_inode_test.txt -name=bm_inode
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/bm_block_test.txt -name=bm_block
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/journal_test.png -name=JourNALING
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/file_small1.txt -ruta=/home/user/docs/a.txt -name=file
-rep -id=A105 -path=/home/vela/Documentos/MIA/MIA_P1_202307705_1VAC1S2025/test/output/ls_docs.png -ruta=/home/user/docs -name=ls
+ 
 
 
 find -path=/ -name=*
@@ -182,4 +162,3 @@ logout
 
 # ERROR AL CERRAR SESIÓN
 logout
-

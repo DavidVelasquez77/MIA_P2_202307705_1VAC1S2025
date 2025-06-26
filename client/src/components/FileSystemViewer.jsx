@@ -55,21 +55,28 @@ function FileSystemViewer() {
       setSelectedDisk(disk)
       setError('')
       
+      console.log(`🔍 Solicitando particiones para disco: ${disk.id}`)
+      
       // Obtener particiones del disco seleccionado usando el endpoint específico
       const response = await ApiService.getPartitions(disk.id)
       
-      if (response.success) {
-        setPartitions(response.partitions)
+      console.log('📦 Respuesta de particiones:', response)
+      
+      if (response && response.success) {
+        console.log(`✅ Particiones recibidas: ${response.partitions?.length || 0}`)
+        setPartitions(response.partitions || [])
         
-        if (response.partitions.length === 0) {
-          setError('Este disco no tiene particiones. Crea una partición usando el comando fdisk.')
+        if (!response.partitions || response.partitions.length === 0) {
+          setError(`Este disco (${disk.name}) no tiene particiones. Crea una partición usando el comando: fdisk -size=500 -path=${disk.path} -name=Particion1`)
         }
       } else {
-        setError('Error al cargar particiones del disco')
+        console.error('❌ Error en respuesta:', response)
+        const errorMsg = response?.error || 'Error desconocido al cargar particiones'
+        setError(`Error al cargar particiones: ${errorMsg}`)
       }
     } catch (error) {
-      setError('Error de conexión al cargar particiones')
-      console.error('Error loading partitions:', error)
+      console.error('❌ Error de conexión:', error)
+      setError(`Error de conexión al cargar particiones: ${error.message}`)
     } finally {
       setLoading(false)
     }

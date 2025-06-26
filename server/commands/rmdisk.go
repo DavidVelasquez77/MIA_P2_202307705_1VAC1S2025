@@ -55,11 +55,16 @@ func ParseRmdisk(tokens []string) (string, error) {
 }
 
 func commandRmdisk(rmdisk *RMDISK) error {
-
-	// stores.DeleteMountedPartitions(rmdisk.path)
-
 	if !fileExists(rmdisk.path) {
 		return fmt.Errorf("el archivo no existe en el path solicitado")
+	}
+
+	// Eliminar del mapa de discos cargados antes de eliminar el archivo
+	for diskName, diskPath := range stores.LoadedDiskPaths {
+		if diskPath == rmdisk.path {
+			delete(stores.LoadedDiskPaths, diskName)
+			break
+		}
 	}
 
 	err := os.Remove(rmdisk.path)

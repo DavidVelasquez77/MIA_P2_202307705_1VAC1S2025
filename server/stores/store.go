@@ -3,15 +3,15 @@ package stores
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
+	"server/console"
 	"server/structures"
 	"server/utils"
 	"strings"
 )
 
-const Carnet string = "05"                                               //2023007705
-const PathDisk string = "/home/ubuntu/MIA_P2_202307705_1VAC1S2025/test/" //FIXME cambiar el path
+const Carnet string = "05"                                                           //2023007705
+const PathDisk string = "/home/vela/Documentos/MIA/MIA_P2_202307705_1VAC1S2025/test" //FIXME cambiar el path
 
 var (
 	MountedPartitions map[string]string = make(map[string]string) //ID:path
@@ -52,6 +52,15 @@ func DeleteMountedPartitions(path string) {
 			// delete(utils.PathToLetter, path)
 		}
 	}
+	for key, value := range LoadedDiskPaths {
+		if value == path {
+			delete(LoadedDiskPaths, key)
+		}
+	}
+}
+
+// Nueva función para limpiar solo los discos cargados
+func RemoveLoadedDisk(path string) {
 	for key, value := range LoadedDiskPaths {
 		if value == path {
 			delete(LoadedDiskPaths, key)
@@ -120,29 +129,28 @@ func GetMountedPartitionSuperblock(id string) (*structures.SuperBlock, *structur
 	return &sb, partition, path, nil
 }
 
-// CleanupInvalidDisks elimina entradas de discos que ya no existen o no son válidos
-func CleanupInvalidDisks() {
-	validDisks := make(map[string]string)
+// Nueva función para limpiar completamente el estado
+func ClearAllDisks() {
+	LoadedDiskPaths = make(map[string]string)
+	MountedPartitions = make(map[string]string)
+	LogedIdPartition = ""
+	LogedUser = ""
+}
 
-	for diskName, diskPath := range LoadedDiskPaths {
-		// Verificar que el archivo existe
-		if _, err := os.Stat(diskPath); os.IsNotExist(err) {
-			fmt.Printf("⚠️ Disco %s no existe en path %s, eliminando del registro\n", diskName, diskPath)
-			continue
-		}
-
-		// Verificar que es un archivo .dsk
-		if !strings.HasSuffix(diskPath, ".dsk") {
-			fmt.Printf("⚠️ Archivo %s no es un disco válido (.dsk), eliminando del registro\n", diskPath)
-			continue
-		}
-
-		// Si llega aquí, es válido
-		validDisks[diskName] = diskPath
+// Función mejorada para debug del estado actual
+func PrintCurrentState() {
+	console.PrintInfo("=== ESTADO ACTUAL DEL SISTEMA ===")
+	console.PrintInfo(fmt.Sprintf("📀 Discos cargados: %d", len(LoadedDiskPaths)))
+	for letter, path := range LoadedDiskPaths {
+		console.PrintInfo(fmt.Sprintf("  - %s: %s", letter, path))
 	}
 
-	// Actualizar el mapa con solo los discos válidos
-	LoadedDiskPaths = validDisks
+	console.PrintInfo(fmt.Sprintf("🗂️ Particiones montadas: %d", len(MountedPartitions)))
+	for id, path := range MountedPartitions {
+		console.PrintInfo(fmt.Sprintf("  - %s: %s", id, path))
+	}
 
-	fmt.Printf("📀 Discos válidos después de limpieza: %d\n", len(LoadedDiskPaths))
+	console.PrintInfo(fmt.Sprintf("👤 Usuario logueado: %s", LogedUser))
+	console.PrintInfo(fmt.Sprintf("💾 Partición logueada: %s", LogedIdPartition))
+	console.PrintSeparator()
 }

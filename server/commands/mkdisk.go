@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"server/console"
 	stores "server/stores"
 	structures "server/structures"
 	utils "server/utils"
@@ -78,8 +77,11 @@ func ParseMkdisk(tokens []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Usar la función de debug para agregar el disco
 	name := utils.GetNameByPath(cmd.path)
-	stores.LoadedDiskPaths[name] = cmd.path
+	stores.AddLoadedDisk(name, cmd.path)
+
 	return fmt.Sprintf("MKDISK: %s creado exitosamente", cmd.path), nil
 
 }
@@ -108,11 +110,7 @@ func commandMkdisk(mkdisk *MKDISK) error {
 		return err
 	}
 
-	// Agregar el disco a los discos cargados automáticamente
-	diskLetter := utils.GetLetterToDisk()
-	stores.LoadedDiskPaths[diskLetter] = mkdisk.path
-	console.PrintInfo(fmt.Sprintf("Disco agregado a la lista: %s -> %s", diskLetter, mkdisk.path))
-
+	// NO duplicar la adición aquí - ya se hace en ParseMkdisk
 	return nil
 }
 

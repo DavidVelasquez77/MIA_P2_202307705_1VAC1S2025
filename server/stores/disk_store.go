@@ -33,6 +33,7 @@ func PrintLoadedDisks() {
 		return
 	}
 
+	console.PrintInfo(fmt.Sprintf("  📊 Total de discos: %d", len(LoadedDiskPaths)))
 	for letter, path := range LoadedDiskPaths {
 		console.PrintInfo(fmt.Sprintf("  %s -> %s", letter, path))
 	}
@@ -46,7 +47,22 @@ func PrintMountedPartitions() {
 		return
 	}
 
+	console.PrintInfo(fmt.Sprintf("  📊 Total de particiones: %d", len(MountedPartitions)))
 	for id, path := range MountedPartitions {
 		console.PrintInfo(fmt.Sprintf("  %s -> %s", id, path))
+	}
+}
+
+// Nueva función para agregar disco con debug
+func AddLoadedDisk(letter, path string) {
+	LoadedDiskPaths[letter] = path
+	console.PrintInfo(fmt.Sprintf("➕ Disco agregado: %s -> %s (Total: %d)", letter, path, len(LoadedDiskPaths)))
+}
+
+// Nueva función para remover disco con debug
+func RemoveLoadedDiskByLetter(letter string) {
+	if path, exists := LoadedDiskPaths[letter]; exists {
+		delete(LoadedDiskPaths, letter)
+		console.PrintInfo(fmt.Sprintf("➖ Disco removido: %s -> %s (Total: %d)", letter, path, len(LoadedDiskPaths)))
 	}
 }

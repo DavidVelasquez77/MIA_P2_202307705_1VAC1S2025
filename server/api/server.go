@@ -253,33 +253,22 @@ func handleGetDisks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Obtener discos reales del sistema y limpiar entradas inválidas
+	// Obtener discos reales del sistema
 	disks := []map[string]interface{}{}
-	validDisks := make(map[string]string)
+
+	// Debug: imprimir estado actual
+	console.PrintInfo(fmt.Sprintf("🔍 Consultando discos cargados: %d discos encontrados", len(stores.LoadedDiskPaths)))
 
 	for diskName, diskPath := range stores.LoadedDiskPaths {
-		// Verificar que el archivo existe y tiene extensión .dsk
-		if !fileExistsInDisk(diskPath) {
-			console.PrintWarning(fmt.Sprintf("⚠️ Disco %s no existe en path %s, eliminando del registro", diskName, diskPath))
-			continue
-		}
-
-		// Verificar que es un archivo .dsk
-		if !strings.HasSuffix(diskPath, ".dsk") {
-			console.PrintWarning(fmt.Sprintf("⚠️ Archivo %s no es un disco válido (.dsk), ignorando", diskPath))
-			continue
-		}
+		console.PrintInfo(fmt.Sprintf("  📀 Procesando disco: %s -> %s", diskName, diskPath))
 
 		// Leer información del MBR
 		mbr := &structures.MBR{}
 		err := mbr.DeserializeMBR(diskPath)
 		if err != nil {
-			console.PrintWarning(fmt.Sprintf("⚠️ Error al leer MBR del disco %s: %v", diskPath, err))
+			console.PrintError(fmt.Sprintf("  ❌ Error al leer MBR del disco %s: %v", diskName, err))
 			continue // Saltar discos con errores
 		}
-
-		// Si llegamos aquí, el disco es válido
-		validDisks[diskName] = diskPath
 
 		// Convertir tamaño a formato legible
 		sizeInMB := float64(mbr.Mbr_size) / (1024 * 1024)
@@ -293,12 +282,10 @@ func handleGetDisks(w http.ResponseWriter, r *http.Request) {
 			"path":   diskPath,
 		}
 		disks = append(disks, disk)
+		console.PrintInfo(fmt.Sprintf("  ✅ Disco agregado a respuesta: %s", diskName))
 	}
 
-	// Actualizar el mapa con solo los discos válidos
-	stores.LoadedDiskPaths = validDisks
-
-	console.PrintInfo(fmt.Sprintf("📀 Discos válidos encontrados: %d", len(disks)))
+	console.PrintInfo(fmt.Sprintf("📊 Respuesta final: %d discos en la lista", len(disks)))
 
 	response := map[string]interface{}{
 		"success": true,
@@ -324,34 +311,84 @@ func handleGetPartitions(w http.ResponseWriter, r *http.Request) {
 
 	diskId := r.URL.Query().Get("disk")
 	if diskId == "" {
+		console.PrintError("Parámetro disk faltante en la solicitud")
 		http.Error(w, "Parámetro disk requerido", http.StatusBadRequest)
 		return
+	}
+
+	console.PrintInfo(fmt.Sprintf("🔍 Solicitud de particiones para disco: %s", diskId))
+
+	// Debug: Mostrar estado actual de discos cargados
+	console.PrintInfo(fmt.Sprintf("📊 Discos disponibles: %d", len(stores.LoadedDiskPaths)))
+	for letter, path := range stores.LoadedDiskPaths {
+		console.PrintInfo(fmt.Sprintf("  - %s: %s", letter, path))
 	}
 
 	// Obtener particiones reales del disco
 	diskPath, exists := stores.LoadedDiskPaths[diskId]
 	if !exists {
-		http.Error(w, "Disco no encontrado", http.StatusNotFound)
+		console.PrintError(fmt.Sprintf("❌ Disco %s no encontrado en discos cargados", diskId))
+
+		// Dar información detallada del error
+		response := map[string]interface{}{
+			"success": false,
+			"error":   fmt.Sprintf("Disco %s no encontrado. Discos disponibles: %v", diskId, getAvailableDiskIds()),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	console.PrintInfo(fmt.Sprintf("✅ Disco encontrado: %s -> %s", diskId, diskPath))
+
+	// Verificar que el archivo existe
+	if _, err := os.Stat(diskPath); os.IsNotExist(err) {
+		console.PrintError(fmt.Sprintf("❌ Archivo de disco no existe: %s", diskPath))
+		response := map[string]interface{}{
+			"success": false,
+			"error":   fmt.Sprintf("El archivo del disco %s no existe en %s", diskId, diskPath),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	mbr := &structures.MBR{}
 	err := mbr.DeserializeMBR(diskPath)
 	if err != nil {
-		http.Error(w, "Error al leer MBR", http.StatusInternalServerError)
+		console.PrintError(fmt.Sprintf("❌ Error al leer MBR del disco %s: %v", diskId, err))
+		response := map[string]interface{}{
+			"success": false,
+			"error":   fmt.Sprintf("Error al leer MBR del disco %s: %v", diskId, err),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	partitions := []map[string]interface{}{}
+	console.PrintInfo("📋 Leyendo particiones del MBR...")
 
-	for _, partition := range mbr.Mbr_partitions {
-		// Saltar particiones vacías
-		if partition.Part_type[0] == 'N' || partition.Part_start == -1 {
+	partitions := []map[string]interface{}{}
+	partitionCount := 0
+
+	for i, partition := range mbr.Mbr_partitions {
+		console.PrintInfo(fmt.Sprintf("  Partición %d: tipo=%c, start=%d, size=%d",
+			i, partition.Part_type[0], partition.Part_start, partition.Part_size))
+
+		// Saltar particiones vacías o no utilizadas
+		if partition.Part_type[0] == 'N' || partition.Part_start == -1 || partition.Part_size <= 0 {
+			console.PrintInfo(fmt.Sprintf("    ⏭️ Saltando partición %d (no utilizada)", i))
 			continue
 		}
 
 		partName := strings.TrimRight(string(partition.Part_name[:]), "\x00")
 		partId := strings.TrimRight(string(partition.Part_id[:]), "\x00")
+
+		// Verificar que tenga nombre válido
+		if partName == "" {
+			console.PrintInfo(fmt.Sprintf("    ⏭️ Saltando partición %d (sin nombre)", i))
+			continue
+		}
 
 		var partType string
 		switch partition.Part_type[0] {
@@ -362,7 +399,7 @@ func handleGetPartitions(w http.ResponseWriter, r *http.Request) {
 		case 'L':
 			partType = "Lógica"
 		default:
-			partType = "Desconocida"
+			partType = fmt.Sprintf("Desconocida (%c)", partition.Part_type[0])
 		}
 
 		sizeInMB := float64(partition.Part_size) / (1024 * 1024)
@@ -377,17 +414,39 @@ func handleGetPartitions(w http.ResponseWriter, r *http.Request) {
 			"type":    partType,
 			"size":    sizeStr,
 			"mounted": mounted,
+			"start":   partition.Part_start,
+			"rawSize": partition.Part_size,
 		}
 		partitions = append(partitions, part)
+		partitionCount++
+
+		console.PrintInfo(fmt.Sprintf("    ✅ Partición agregada: %s (%s, %s, montada: %v)",
+			partName, partType, sizeStr, mounted))
 	}
+
+	console.PrintInfo(fmt.Sprintf("📊 Total de particiones procesadas: %d", partitionCount))
 
 	response := map[string]interface{}{
 		"success":    true,
 		"partitions": partitions,
+		"diskId":     diskId,
+		"diskPath":   diskPath,
+		"total":      partitionCount,
 	}
+
+	console.PrintInfo(fmt.Sprintf("✅ Respuesta enviada con %d particiones", len(partitions)))
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Función auxiliar para obtener IDs de discos disponibles
+func getAvailableDiskIds() []string {
+	var ids []string
+	for id := range stores.LoadedDiskPaths {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 func handleGetFileSystem(w http.ResponseWriter, r *http.Request) {
@@ -1059,10 +1118,4 @@ func handleGetFileContent(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-}
-
-// fileExistsInDisk verifica si un archivo de disco existe en el sistema de archivos
-func fileExistsInDisk(path string) bool {
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
 }
