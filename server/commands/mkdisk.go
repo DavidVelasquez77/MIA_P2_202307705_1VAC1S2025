@@ -26,6 +26,9 @@ func ParseMkdisk(tokens []string) (string, error) {
 	cmd := &MKDISK{}
 	letterDisk := utils.GetLetterToDisk()
 	cmd.path = stores.GetPathDisk(letterDisk)
+	// Establecer "M" como unidad por defecto
+	cmd.unit = "M"
+
 	args := strings.Join(tokens, " ")
 	re := regexp.MustCompile(`-size=\d+|-unit=[kKmM]|-fit=[bBfFwW]{2}`)
 	matches := re.FindAllString(args, -1)
@@ -67,9 +70,7 @@ func ParseMkdisk(tokens []string) (string, error) {
 	if cmd.size == 0 {
 		return "", errors.New("faltan parametros requeridos: -size")
 	}
-	if cmd.unit == "" {
-		cmd.unit = "K"
-	}
+	// Remover la asignación condicional ya que cmd.unit ya tiene "M" por defecto
 	if cmd.fit == "" {
 		cmd.fit = "FF"
 	}

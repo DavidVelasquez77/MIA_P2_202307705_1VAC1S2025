@@ -1,5 +1,5 @@
 mkdisk -size=10 -unit=M 
-mkdisk -size=12
+mkdisk -size=12 
 mkdisk -size=10 -unit=M
 mkdisk -size=12
 mkdisk -size=15
