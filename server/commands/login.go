@@ -79,6 +79,13 @@ func CommandLogin(login *LOGIN) error {
 	if stores.LogedIdPartition != "" {
 		return errors.New("se debe realizar un logout antes de un login")
 	}
+
+	// Primero validar que la partición exista y obtener información del disco
+	_, diskPath, err := stores.GetMountedPartition(login.Id)
+	if err != nil {
+		return err
+	}
+
 	contentUsersTxt, err := getContetnUsersTxt(login.Id)
 	if err != nil {
 		return err
@@ -91,6 +98,14 @@ func CommandLogin(login *LOGIN) error {
 	}
 	stores.LogedIdPartition = login.Id
 	stores.LogedUser = login.User
+
+	// Solo guardar información del disco si NO es root
+	if strings.ToLower(login.User) != "root" {
+		stores.LogedUserDiskPath = diskPath
+	} else {
+		stores.LogedUserDiskPath = "" // Root no tiene restricciones
+	}
+
 	err = setUpIDs(login.User, contentMatrix)
 	if err != nil {
 		return err

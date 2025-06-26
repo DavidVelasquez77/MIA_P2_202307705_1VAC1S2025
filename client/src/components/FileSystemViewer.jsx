@@ -16,6 +16,7 @@ function FileSystemViewer() {
   const [showFileContent, setShowFileContent] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
   const [fileContent, setFileContent] = useState('')
+  const [isRootUser, setIsRootUser] = useState(false) // Nueva variable para detectar root
 
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -34,9 +35,14 @@ function FileSystemViewer() {
       
       if (response.success) {
         setDisks(response.disks)
+        setIsRootUser(response.isRoot || false) // Obtener información si es root
         
         if (response.disks.length === 0) {
-          setError('No hay discos disponibles. Crea un disco primero usando el comando mkdisk.')
+          if (response.isRoot) {
+            setError('No hay discos disponibles en el sistema. Crea un disco primero usando el comando mkdisk.')
+          } else {
+            setError('No se encontró el disco asociado a tu partición. Contacta al administrador.')
+          }
         }
       } else {
         setError('Error al cargar discos disponibles')
@@ -240,11 +246,29 @@ function FileSystemViewer() {
       <div className="filesystem-viewer">
         <div className="viewer-header">
           <div className="header-left">
-            <h1>Visualizador del Sistema de Archivos</h1>
-            <p>Seleccione el disco que desea visualizar:</p>
+            <h1>Explorador del Sistema de Archivos</h1>
+            {isRootUser ? (
+              <div className="root-notice">
+                <span className="root-badge">👑 ADMINISTRADOR</span>
+                <p>📀 Tienes acceso a todos los discos del sistema</p>
+              </div>
+            ) : (
+              <div className="user-notice">
+                <p>📀 Mostrando el disco asociado a tu partición logueada</p>
+                {user && (
+                  <div className="user-disk-info">
+                    <span className="info-badge">
+                      👤 Usuario: {user.usuario} | 💾 Partición: {user.idParticion}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="header-right">
-            <span className="user-info">👤 {user?.usuario}</span>
+            <span className="user-info">
+              {isRootUser ? '👑' : '👤'} {user?.usuario}
+            </span>
             <button className="header-button" onClick={handleBackToConsole}>
               Consola
             </button>
@@ -262,21 +286,41 @@ function FileSystemViewer() {
 
         {disks.length > 0 ? (
           <div className="disk-selection">
+            {isRootUser ? (
+              <div className="admin-disk-notice">
+                <h3>👑 Acceso de Administrador</h3>
+                <p>Como administrador, puedes acceder a todos los discos del sistema</p>
+                <p>📊 Total de discos disponibles: {disks.length}</p>
+              </div>
+            ) : (
+              <div className="user-disk-notice">
+                <h3>🔒 Acceso de Usuario</h3>
+                <p>Solo puedes acceder al disco que contiene tu partición logueada ({user?.idParticion})</p>
+              </div>
+            )}
             <div className="disk-grid">
               {disks.map((disk) => (
                 <div
                   key={disk.id}
-                  className="disk-card"
+                  className={`disk-card ${isRootUser ? 'admin-disk' : 'user-disk'}`}
                   onClick={() => handleDiskSelect(disk)}
                 >
                   <div className="disk-icon">
                     <div className="disk-image">💾</div>
+                    {isRootUser ? (
+                      <div className="admin-disk-badge">👑 Admin</div>
+                    ) : (
+                      <div className="user-disk-badge">🔒 Tu Disco</div>
+                    )}
                   </div>
                   <div className="disk-info">
                     <h3>{disk.name}</h3>
                     <p>Tamaño: {disk.size}</p>
                     <p>Estado: {disk.status}</p>
                     <p>Letra: {disk.id}</p>
+                    {!isRootUser && (
+                      <p className="user-partition">📁 Partición: {user?.idParticion}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -284,15 +328,34 @@ function FileSystemViewer() {
           </div>
         ) : !loading && !error && (
           <div className="no-data-message">
-            <h3>📀 No hay discos disponibles</h3>
-            <p>Para crear un disco, ve a la consola y usa el comando:</p>
-            <code>mkdisk -size=1000 -unit=M</code>
+            {isRootUser ? (
+              <>
+                <h3>📀 No hay discos en el sistema</h3>
+                <p>Como administrador, no hay discos disponibles actualmente</p>
+                <p>Para crear un disco, ve a la consola y usa el comando:</p>
+                <code>mkdisk -size=1000 -unit=M</code>
+              </>
+            ) : (
+              <>
+                <h3>❌ No se encontró tu disco</h3>
+                <p>No se pudo encontrar el disco asociado a tu partición {user?.idParticion}</p>
+                <p>💡 Esto puede suceder si:</p>
+                <ul>
+                  <li>El disco fue desmontado después del login</li>
+                  <li>Hay un problema con la configuración del sistema</li>
+                  <li>La partición no está correctamente asociada</li>
+                </ul>
+                <p>🔧 Intenta hacer logout y login nuevamente</p>
+              </>
+            )}
           </div>
         )}
 
         {loading && (
           <div className="loading-overlay">
-            <div className="loading-spinner">🔄 Cargando discos...</div>
+            <div className="loading-spinner">
+              🔄 {isRootUser ? 'Cargando discos del sistema...' : 'Cargando tu disco...'}
+            </div>
           </div>
         )}
       </div>

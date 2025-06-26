@@ -35,16 +35,29 @@ export function AuthProvider({ children }) {
     setIsLoading(true)
     
     try {
-      const result = await ApiService.login(idParticion, usuario, contraseña)
+      // Crear comando de login
+      const loginCommand = `login -id=${idParticion} -user=${usuario} -pass=${contraseña}`
+      const result = await ApiService.executeCommand(loginCommand)
       
       if (result.success) {
-        setUser(result.userData)
+        // Crear datos del usuario con información adicional
+        const userData = {
+          idParticion,
+          usuario,
+          loginTime: new Date().toISOString()
+        }
+        
+        setUser(userData)
         setIsAuthenticated(true)
         
         // Guardar sesión en localStorage
-        localStorage.setItem('mia_user', JSON.stringify(result.userData))
+        localStorage.setItem('mia_user', JSON.stringify(userData))
         
-        return { success: true, message: result.message }
+        return { 
+          success: true, 
+          message: result.data || `Usuario ${usuario} logueado exitosamente`,
+          userData 
+        }
       } else {
         return { success: false, error: result.error }
       }
@@ -64,7 +77,7 @@ export function AuthProvider({ children }) {
     try {
       // Intentar logout en el servidor solo si hay usuario autenticado
       if (isAuthenticated) {
-        await ApiService.logout()
+        await ApiService.executeCommand('logout')
       }
     } catch (error) {
       console.error('Error al hacer logout en el servidor:', error)
